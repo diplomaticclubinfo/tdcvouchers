@@ -45,7 +45,8 @@ nav{display:flex;flex-wrap:wrap}video{width:100%;max-width:420px;border-radius:8
 <div class="card" id="list" hidden><div class="bar"><div><label>Find by number</label><input id="q" placeholder="Exact number"></div>
 <div><label>Category</label><select id="fc"><option value="">All</option><option value="PAID">Paid Voucher</option><option value="COMPLIMENTARY">Complimentary Voucher</option></select></div>
 <button class="btn" id="go">Search</button><button class="btn g" id="prt">Print selected</button>
-<div><label>QR file type</label><select id="qf"><option value="pdf">PDF (vector)</option><option value="svg">SVG (vector)</option><option value="png">PNG (300 dpi)</option></select></div><div><label>QR size (mm)</label><input id="qs" type="number" min="10" max="200" value="30" style="width:90px"></div><button class="btn g" id="qdl">Download QR codes</button><label style="margin:0 0 8px"><input type="checkbox" id="showR" style="width:auto"> Show recipient on print</label></div>
+<div><label>QR file type</label><select id="qf"><option value="pdf">PDF (vector)</option><option value="svg">SVG (vector)</option><option value="png">PNG (300 dpi)</option></select></div><div><label>QR size (mm)</label><input id="qs" type="number" min="10" max="200" value="30" style="width:90px"></div><button class="btn g" id="qdl">Download QR codes</button>
+<div><label>QR links CSV: number from</label><input id="lf" placeholder="optional" style="width:110px"></div><div><label>to</label><input id="lt" placeholder="optional" style="width:110px"></div><button class="btn g" id="ldl">Download QR links (CSV)</button><label style="margin:0 0 8px"><input type="checkbox" id="showR" style="width:auto"> Show recipient on print</label></div>
 <table><thead><tr><th><input type="checkbox" id="sel" style="width:auto" aria-label="Select all vouchers"></th><th>Number</th><th>Category</th><th>Valid</th><th>Status</th><th>Recipient</th><th></th></tr></thead><tbody id="rows"></tbody></table></div>
 
 <div class="card" id="ed" hidden><h2>Edit voucher <span id="en"></span></h2><div class="row">
@@ -204,6 +205,19 @@ $("qdl").onclick=()=>run(async()=>{need(isAdmin(),"Admins only.");const sel=Arra
   for(let i=0;i<sel.length;i++){z.file(sel[i].voucherNumber+"."+f,await one(sel[i]));if(i%25===0){say("Preparing QR codes… "+i+" of "+sel.length);await new Promise(r=>setTimeout(r))}}
   saveBlob(await z.generateAsync({type:"blob"}),"qr-codes-"+sel[0].voucherNumber+"-to-"+sel[sel.length-1].voucherNumber+".zip")}
  await aud({type:"qr_exported",number:sel.length+" × "+f.toUpperCase()});say(sel.length+" QR code(s) downloaded"+(sel.length>1?" in one ZIP file with one "+f.toUpperCase()+" per voucher, named by voucher number.":"."))});
+// ---- QR link list as CSV (admin): the ticked vouchers, or a voucher number range ----
+$("ldl").onclick=()=>run(async()=>{need(isAdmin(),"Admins only.");
+ let rows=Array.from(document.querySelectorAll("#rows input:checked")).map(c=>cache[c.dataset.i]);
+ if(!rows.length){const a=$("lf").value.trim(),b=$("lt").value.trim(),nf=np(a),nt=np(b);
+  need((!a||!isNaN(nf))&&(!b||!isNaN(nt)),"Voucher numbers must contain digits.");need(isNaN(nf)||isNaN(nt)||nf<=nt,"The first number must not be higher than the last.");
+  if(!a&&!b&&!confirm("No vouchers are ticked and no number range is set. Export the QR links for ALL vouchers?"))return;
+  rows=(await db.collection("vouchers").get()).docs.map(d=>d.data()).filter(v=>{if(v.status==="deleted")return false;const n=np(v.voucherNumber);return(isNaN(nf)||n>=nf)&&(isNaN(nt)||n<=nt)})}
+ need(rows.length,"No vouchers match.");
+ rows=rows.slice().sort((x,y)=>(np(x.voucherNumber)-np(y.voucherNumber))||String(x.voucherNumber).localeCompare(String(y.voucherNumber)));
+ const cell=x=>{x=String(x==null?"":x);if(/^[=+\-@]/.test(x))x="'"+x;return '"'+x.replace(/"/g,'""')+'"'};
+ const csv="\ufeff"+[["Voucher number","QR link","Category","Start date","End date","Status"]].concat(rows.map(v=>[v.voucherNumber,qrUrl(v),catName(v.category),v.startDate,v.endDate,stat(v)])).map(r=>r.map(cell).join(",")).join("\r\n");
+ saveBlob(new Blob([csv],{type:"text/csv"}),"qr-links-"+rows[0].voucherNumber+"-to-"+rows[rows.length-1].voucherNumber+".csv");
+ await aud({type:"qr_links_exported",number:rows.length+" links"});say(rows.length+" QR link(s) downloaded as CSV.")});
 // ---- generate ----
 async function getCfg(){const s=await CFG().get();need(s.exists,"Numbering is not set up yet. Open Numbering first.");return s.data()}
 async function pick(c,qty){const seqs=[];let n=c.nextNumber; // skips numbers already used (e.g. entered manually or deleted)
