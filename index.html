@@ -4,6 +4,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
 :root{--ink:#1F2A24;--soft:#4A5750;--paper:#EDF0E9;--raise:#fff;--forest:#2F5D50;--forest-d:#1F423A;--gold:#C9A24B;--brick:#AE4530;--line:rgba(31,42,36,.16)}
 *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.45 Inter,sans-serif}
@@ -42,8 +44,9 @@ nav{display:flex;flex-wrap:wrap}video{width:100%;max-width:420px;border-radius:8
 
 <div class="card" id="list" hidden><div class="bar"><div><label>Find by number</label><input id="q" placeholder="Exact number"></div>
 <div><label>Category</label><select id="fc"><option value="">All</option><option value="PAID">Paid Voucher</option><option value="COMPLIMENTARY">Complimentary Voucher</option></select></div>
-<button class="btn" id="go">Search</button><button class="btn g" id="prt">Print selected</button><label style="margin:0 0 8px"><input type="checkbox" id="showR" style="width:auto"> Show recipient on print</label></div>
-<table><thead><tr><th></th><th>Number</th><th>Category</th><th>Valid</th><th>Status</th><th>Recipient</th><th></th></tr></thead><tbody id="rows"></tbody></table></div>
+<button class="btn" id="go">Search</button><button class="btn g" id="prt">Print selected</button>
+<div><label>QR file type</label><select id="qf"><option value="pdf">PDF (vector)</option><option value="svg">SVG (vector)</option><option value="png">PNG (300 dpi)</option></select></div><div><label>QR size (mm)</label><input id="qs" type="number" min="10" max="200" value="30" style="width:90px"></div><button class="btn g" id="qdl">Download QR codes</button><label style="margin:0 0 8px"><input type="checkbox" id="showR" style="width:auto"> Show recipient on print</label></div>
+<table><thead><tr><th><input type="checkbox" id="sel" style="width:auto" aria-label="Select all vouchers"></th><th>Number</th><th>Category</th><th>Valid</th><th>Status</th><th>Recipient</th><th></th></tr></thead><tbody id="rows"></tbody></table></div>
 
 <div class="card" id="ed" hidden><h2>Edit voucher <span id="en"></span></h2><div class="row">
 <div><label>Category</label><select id="ec"><option value="PAID">Paid Voucher</option><option value="COMPLIMENTARY">Complimentary Voucher</option></select></div>
@@ -179,8 +182,28 @@ $("ecn").onclick=()=>show("list");
 $("esv").onclick=()=>run(async()=>{const s=form("e");await db.runTransaction(async tx=>{const c=await tx.get(V(editId));need(c.exists&&c.data().status!=="deleted","Voucher not found.");
  tx.update(V(editId),Object.assign({},s,{modifiedAt:ts(),modifiedBy:me}));audit(tx,{type:"voucher_edited",number:editId})});say("Voucher saved.");show("list")});
 $("prt").onclick=()=>{const sel=Array.from(document.querySelectorAll("#rows input:checked")).map(c=>cache[c.dataset.i]);if(!sel.length)return say("Select at least one voucher to print.",true);
- $("print").innerHTML=sel.map(v=>{const qr=qrcode(0,"M");qr.addData(location.origin+location.pathname+"?q="+v.qrId);qr.make();
+ $("print").innerHTML=sel.map(v=>{const qr=qrcode(0,"M");qr.addData(qrUrl(v));qr.make();
  return `<div class="v"><div>${brandBlock()}<h3>${esc(v.voucherNumber)}</h3><div>${catName(v.category)}</div>${v.title?`<div>${esc(v.title)}</div>`:""}<div>Valid ${esc(v.startDate)} to ${esc(v.endDate)}</div>${$("showR").checked&&(v.recipientName||v.contactNumber)?`<div>${esc(v.recipientName)} ${esc(v.contactNumber)}</div>`:""}</div>${qr.createSvgTag(3,0)}</div>`}).join("");print()};
+// ---- QR-only export (admin): one file per voucher, named by voucher number ----
+function qrUrl(v){need(/^https?:$/.test(location.protocol),"Open the app from its https address first. QR codes made from a local file would not link to the app.");return location.origin+location.pathname+"?q="+v.qrId}
+function qrObj(v){const q=qrcode(0,"M");q.addData(qrUrl(v));q.make();return q}
+function qrPdf(q,mm){const n=q.getModuleCount(),tot=n+8,u=mm/tot,d=new window.jspdf.jsPDF({unit:"mm",format:[mm,mm]});d.setFillColor(0,0,0);
+ for(let r=0;r<n;r++)for(let c=0;c<n;c++)if(q.isDark(r,c))d.rect((c+4)*u,(r+4)*u,u+.01,u+.01,"F");return d.output("blob")}
+function qrSvg(q,mm){const n=q.getModuleCount();let p="";for(let r=0;r<n;r++)for(let c=0;c<n;c++)if(q.isDark(r,c))p+=`M${c+4} ${r+4}h1v1h-1z`;
+ return new Blob([`<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="${mm}mm" height="${mm}mm" viewBox="0 0 ${n+8} ${n+8}" shape-rendering="crispEdges"><path d="${p}" fill="#000"/></svg>`],{type:"image/svg+xml"})}
+function qrPng(q,mm){return new Promise(ok=>{const n=q.getModuleCount(),tot=n+8,s=Math.max(1,Math.ceil(Math.round(mm/25.4*300)/tot)),c=document.createElement("canvas");c.width=c.height=tot*s;const x=c.getContext("2d");
+ x.fillStyle="#fff";x.fillRect(0,0,c.width,c.height);x.fillStyle="#000";for(let r=0;r<n;r++)for(let k=0;k<n;k++)if(q.isDark(r,k))x.fillRect((k+4)*s,(r+4)*s,s,s);c.toBlob(ok,"image/png")})}
+function saveBlob(b,name){const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000)}
+$("sel").onchange=()=>document.querySelectorAll("#rows input[type=checkbox]").forEach(c=>c.checked=$("sel").checked);
+$("qdl").onclick=()=>run(async()=>{need(isAdmin(),"Admins only.");const sel=Array.from(document.querySelectorAll("#rows input:checked")).map(c=>cache[c.dataset.i]);
+ need(sel.length,"Select at least one voucher first (use the box at the top of the list to select all).");
+ const mm=+$("qs").value;need(mm>=10&&mm<=200,"Choose a size from 10 to 200 mm.");const f=$("qf").value;need(f!=="pdf"||window.jspdf,"The PDF tool did not load. Check your internet connection and reload.");
+ const one=async v=>{const q=qrObj(v);return f==="pdf"?qrPdf(q,mm):f==="svg"?qrSvg(q,mm):await qrPng(q,mm)};
+ if(sel.length===1){saveBlob(await one(sel[0]),sel[0].voucherNumber+"."+f)}
+ else{need(window.JSZip,"The ZIP tool did not load. Check your internet connection and reload.");const z=new JSZip();
+  for(let i=0;i<sel.length;i++){z.file(sel[i].voucherNumber+"."+f,await one(sel[i]));if(i%25===0){say("Preparing QR codes… "+i+" of "+sel.length);await new Promise(r=>setTimeout(r))}}
+  saveBlob(await z.generateAsync({type:"blob"}),"qr-codes-"+sel[0].voucherNumber+"-to-"+sel[sel.length-1].voucherNumber+".zip")}
+ await aud({type:"qr_exported",number:sel.length+" × "+f.toUpperCase()});say(sel.length+" QR code(s) downloaded"+(sel.length>1?" in one ZIP file with one "+f.toUpperCase()+" per voucher, named by voucher number.":"."))});
 // ---- generate ----
 async function getCfg(){const s=await CFG().get();need(s.exists,"Numbering is not set up yet. Open Numbering first.");return s.data()}
 async function pick(c,qty){const seqs=[];let n=c.nextNumber; // skips numbers already used (e.g. entered manually or deleted)
