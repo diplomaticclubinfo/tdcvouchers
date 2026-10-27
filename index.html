@@ -33,7 +33,7 @@ nav{display:flex;flex-wrap:wrap}video{width:100%;max-width:420px;border-radius:8
 <div id="login"><div class="card"><div class="brand" id="lbrand"></div>
 <p style="color:var(--soft)">Sign in with your name and PIN. The first person to sign in becomes the first admin; after that, admins add other admins and end users.</p>
 <div id="lmsg"></div><label>Your name</label><input id="ln" autocomplete="off"><label>PIN (4+ digits)</label><input id="lp" type="password" inputmode="numeric" autocomplete="off">
-<p><button class="btn" id="lb" style="width:100%">Enter</button></p></div></div>
+<label style="display:flex;gap:8px;align-items:center;font-weight:500"><input type="checkbox" id="lk" checked style="width:auto"> Keep me signed in on this device</label><p><button class="btn" id="lb" style="width:100%">Enter</button></p></div></div>
 
 <div id="app"><div class="top"><div class="brand" id="tbrand"></div>
 <nav><button data-t="list" data-a="1" class="on">Vouchers</button><button data-t="gen" data-a="1">Generate</button><button data-t="cfg" data-a="1">Numbering</button><button data-t="usr" data-a="1">Users</button><button data-t="log" data-a="1">Audit log</button><button data-t="brd" data-a="1">Branding</button><button data-t="bak" data-a="1">Backup</button><button data-t="rep">Reports</button><button data-t="red">Redeem</button></nav>
@@ -102,7 +102,7 @@ nav{display:flex;flex-wrap:wrap}video{width:100%;max-width:420px;border-radius:8
 <div class="card" id="red" hidden><h2>Redeem a voucher</h2>
 <div class="bar"><div style="flex:1;min-width:220px"><label>Type or select the voucher number</label><input id="rn" list="dl" autocomplete="off" placeholder="Voucher number"><datalist id="dl"></datalist></div>
 <button class="btn" id="rl">Look up</button><button class="btn g" id="sc">Scan QR code</button></div>
-<div id="cam" hidden><video id="vid" playsinline muted></video><p><button class="btn g sm" id="scs">Stop camera</button></p></div>
+<div id="cam" hidden><video id="vid" playsinline muted></video><p><button class="btn sm" id="scn" hidden>Scan next voucher</button> <button class="btn g sm" id="scs">Stop camera</button></p></div>
 <div id="sres"></div></div>
 </main></div><div id="print"></div>
 
@@ -111,18 +111,7 @@ nav{display:flex;flex-wrap:wrap}video{width:100%;max-width:420px;border-radius:8
 <script>
 (function(){"use strict";
 // STEP 4 of README.md: paste YOUR new project's firebaseConfig values between the quotes.
-const FIREBASE_CONFIG={apiKey: "AIzaSyACu2vtPryh90P65Ky1mfZGuXh3oXWOJyM",
-
-  authDomain: "voucher-system-91b1c.firebaseapp.com",
-
-  projectId: "voucher-system-91b1c",
-
-  storageBucket: "voucher-system-91b1c.firebasestorage.app",
-
-  messagingSenderId: "834236502291",
-
-  appId: "1:834236502291:web:462d768c73857437dacae6"
-};
+const FIREBASE_CONFIG={apiKey:"YOUR_API_KEY",authDomain:"YOUR_PROJECT.firebaseapp.com",projectId:"YOUR_PROJECT_ID",storageBucket:"YOUR_PROJECT.firebasestorage.app",messagingSenderId:"YOUR_SENDER_ID",appId:"YOUR_APP_ID"};
 if(FIREBASE_CONFIG.apiKey==="YOUR_API_KEY"){document.addEventListener("DOMContentLoaded",()=>{document.body.insertAdjacentHTML("afterbegin",'<div style="background:#AE4530;color:#fff;padding:10px 16px;text-align:center">Setup needed: paste your Firebase config into index.html (see README.md). Nothing will work until then.</div>')});throw new Error("Firebase is not configured yet")}
 firebase.initializeApp(FIREBASE_CONFIG);const db=firebase.firestore(),FV=firebase.firestore.FieldValue,ts=()=>FV.serverTimestamp();
 const $=id=>document.getElementById(id),esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -139,7 +128,11 @@ const CFG=()=>db.collection("vcfg").doc("numbering"),V=n=>db.collection("voucher
 const audit=(tx,o)=>tx.set(db.collection("vaudit").doc(),Object.assign({},o,{actor:me,at:ts()}));
 const aud=o=>db.collection("vaudit").add(Object.assign({},o,{actor:me,at:ts()}));
 async function hp(n,p){const s=n.toLowerCase()+":"+p;if(window.crypto&&crypto.subtle){const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(s));return Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,"0")).join("")}let h=5381;for(const c of s)h=((h<<5)+h+c.charCodeAt(0))|0;return"x"+h}
-let me=sessionStorage.getItem("vu"),role=sessionStorage.getItem("vr"),cache=[],pending=null,users=[],editId=null;
+const ST={get:k=>{try{return localStorage.getItem(k)||sessionStorage.getItem(k)}catch(e){return null}},
+ set:(k,v,keep)=>{try{(keep?localStorage:sessionStorage).setItem(k,v)}catch(e){}},
+ clear:()=>{try{["vu","vr","vt"].forEach(k=>localStorage.removeItem(k));sessionStorage.clear()}catch(e){}}};
+if(ST.get("vt")&&Date.now()-(+ST.get("vt"))>30*864e5)ST.clear(); // keep-signed-in lasts 30 days
+let me=ST.get("vu"),role=ST.get("vr"),cache=[],pending=null,users=[],editId=null;
 const isAdmin=()=>role==="admin";
 // ---- sign in ----
 function enter(){$("login").hidden=true;$("app").style.display="block";$("who").textContent=me+" ("+(isAdmin()?"Admin":"End user")+")";
@@ -149,12 +142,12 @@ $("lb").onclick=async()=>{const n=$("ln").value.trim(),p=$("lp").value,m=$("lmsg
  try{need(n&&p.length>=4,"Enter your name and a PIN of at least 4 digits.");const ref=U(n),h=await hp(n,p),s=await ref.get();let r="admin";
   if(s.exists){need(s.data().hash===h,"Wrong PIN.");r=s.data().role||"admin"}
   else{const any=await db.collection("vusers").limit(1).get();need(any.empty,"No account for that name. Ask an admin to add you.");await ref.set({name:n,hash:h,role:"admin",created:ts()})}
-  me=n;role=r;sessionStorage.setItem("vu",n);sessionStorage.setItem("vr",r);enter()}catch(e){m.innerHTML=`<div class="msg err">${esc(e.message)}</div>`}};
+  me=n;role=r;const keep=$("lk").checked;ST.set("vu",n,keep);ST.set("vr",r,keep);ST.set("vt",String(Date.now()),keep);enter()}catch(e){m.innerHTML=`<div class="msg err">${esc(e.message)}</div>`}};
 $("lp").onkeydown=e=>{if(e.key==="Enter")$("lb").click()};
-$("out").onclick=()=>{sessionStorage.clear();location.href=location.pathname};
+$("out").onclick=()=>{ST.clear();location.href=location.pathname};
 $("cpin").onclick=()=>run(async()=>{const cur=prompt("Current PIN");if(cur===null)return;const s=await U(me).get();need(s.exists&&s.data().hash===await hp(me,cur),"Current PIN is wrong.");
  const nw=prompt("New PIN (4+ digits)");if(nw===null)return;need(nw.length>=4,"PIN must be at least 4 characters.");await U(me).update({hash:await hp(me,nw)});say("PIN changed.")});
-if(me&&role)enter();
+if(me&&role)U(me).get().then(s=>{if(!s.exists){ST.clear();location.reload()}else{role=s.data().role||"admin";enter()}}).catch(()=>enter());
 const tabs=["list","ed","gen","cfg","usr","log","brd","bak","rep","red"];
 function show(t){stopCam();if(t!=="red"&&t!=="rep"&&!isAdmin())t="red";tabs.forEach(x=>$(x).hidden=x!==t);document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.t===t||(t==="ed"&&b.dataset.t==="list")));
  if(t==="list")search();if(t==="cfg")loadCfg();if(t==="log")loadLog();if(t==="usr")loadUsers();if(t==="brd")loadBrd();if(t==="red")loadDl()}
@@ -331,13 +324,18 @@ function lookupQr(code){return run(async()=>{const q=await db.collection("vouche
  const s=await V(code).get();need(s.exists,"No voucher matches this QR code.");$("rn").value=s.id;showV(s.data())})}
 $("rl").onclick=()=>lookupNum($("rn").value);$("rn").onkeydown=e=>{if(e.key==="Enter")lookupNum($("rn").value)};
 let stream=null,scanning=false;const cv=document.createElement("canvas");
-function stopCam(){scanning=false;if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;$("cam").hidden=true}
+function stopCam(){scanning=false;$("scn").hidden=true;if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;$("cam").hidden=true}
 function tick(){if(!scanning)return;const v=$("vid");
  if(v.readyState===v.HAVE_ENOUGH_DATA){cv.width=v.videoWidth;cv.height=v.videoHeight;const x=cv.getContext("2d");x.drawImage(v,0,0);const im=x.getImageData(0,0,cv.width,cv.height),c=jsQR(im.data,cv.width,cv.height);
-  if(c&&c.data){stopCam();const m=c.data.match(/[?&]q=([A-Za-z0-9_-]+)/);lookupQr(m?m[1]:c.data.trim());return}}
+  if(c&&c.data){scanning=false;$("scn").hidden=false;const m=c.data.match(/[?&]q=([A-Za-z0-9_-]+)/);lookupQr(m?m[1]:c.data.trim());return}}
  requestAnimationFrame(tick)}
-$("sc").onclick=()=>run(async()=>{need(window.jsQR&&navigator.mediaDevices,"Camera scanning is not available here. Camera access needs the page to be opened over https (see README). You can still type the voucher number.");
- stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}});$("cam").hidden=false;$("vid").srcObject=stream;await $("vid").play();scanning=true;tick()});
+$("sc").onclick=()=>run(async()=>{if(stream){$("scn").click();return}
+ need(window.isSecureContext,"The camera only works on a secure (https) page. Open this app's https address (see README), not a plain http or file link.");
+ need(navigator.mediaDevices&&window.jsQR,"This browser can't use the camera here. Open the page directly in Chrome or Safari, not inside another app's built-in browser.");
+ try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"}}})}
+ catch(e){throw new Error(e.name==="NotAllowedError"?"Camera permission is blocked. Allow camera access for this site in your browser settings, then try again.":e.name==="NotFoundError"?"No camera was found on this device.":"Could not start the camera: "+(e.message||e.name))}
+ $("cam").hidden=false;$("vid").srcObject=stream;await $("vid").play();scanning=true;tick()});
+$("scn").onclick=()=>{$("sres").innerHTML="";$("rn").value="";$("scn").hidden=true;scanning=true;tick()}; // camera stays on between vouchers
 $("scs").onclick=stopCam;
 })();
 </script></body></html>
