@@ -111,7 +111,18 @@ nav{display:flex;flex-wrap:wrap}video{width:100%;max-width:420px;border-radius:8
 <script>
 (function(){"use strict";
 // STEP 4 of README.md: paste YOUR new project's firebaseConfig values between the quotes.
-const FIREBASE_CONFIG={apiKey:"YOUR_API_KEY",authDomain:"YOUR_PROJECT.firebaseapp.com",projectId:"YOUR_PROJECT_ID",storageBucket:"YOUR_PROJECT.firebasestorage.app",messagingSenderId:"YOUR_SENDER_ID",appId:"YOUR_APP_ID"};
+const FIREBASE_CONFIG={apiKey: "AIzaSyACu2vtPryh90P65Ky1mfZGuXh3oXWOJyM",
+
+  authDomain: "voucher-system-91b1c.firebaseapp.com",
+
+  projectId: "voucher-system-91b1c",
+
+  storageBucket: "voucher-system-91b1c.firebasestorage.app",
+
+  messagingSenderId: "834236502291",
+
+  appId: "1:834236502291:web:462d768c73857437dacae6"
+};
 if(FIREBASE_CONFIG.apiKey==="YOUR_API_KEY"){document.addEventListener("DOMContentLoaded",()=>{document.body.insertAdjacentHTML("afterbegin",'<div style="background:#AE4530;color:#fff;padding:10px 16px;text-align:center">Setup needed: paste your Firebase config into index.html (see README.md). Nothing will work until then.</div>')});throw new Error("Firebase is not configured yet")}
 firebase.initializeApp(FIREBASE_CONFIG);const db=firebase.firestore(),FV=firebase.firestore.FieldValue,ts=()=>FV.serverTimestamp();
 const $=id=>document.getElementById(id),esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
