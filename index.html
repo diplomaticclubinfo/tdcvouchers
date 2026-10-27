@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Voucher Ledger</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
+<style>
+:root{--ink:#1F2A24;--soft:#4A5750;--paper:#EDF0E9;--raise:#fff;--forest:#2F5D50;--forest-d:#1F423A;--gold:#C9A24B;--brick:#AE4530;--line:rgba(31,42,36,.16)}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.45 Inter,sans-serif}
+h1,h2,h3{font-family:Fraunces,serif;font-weight:600;margin:0}
+.card{background:var(--raise);border:1px solid var(--line);border-radius:10px;padding:20px}
+.top{display:flex;gap:16px;align-items:center;flex-wrap:wrap;padding:14px 28px;background:var(--raise);border-bottom:1px solid var(--line)}
+.top .brand{margin-right:auto}.brand{display:flex;align-items:center;gap:10px}.brand img{max-height:40px;max-width:150px;object-fit:contain}.top h1{font-size:21px}#lbrand img{max-height:64px;max-width:220px}.bh{font-weight:600;display:flex;gap:8px;align-items:center;margin-bottom:6px}.bh img{max-height:28px;max-width:100px}nav button{background:none;border:0;padding:8px 10px;font:inherit;color:var(--soft);cursor:pointer;border-bottom:2px solid transparent}
+nav button.on{color:var(--forest);border-color:var(--gold);font-weight:600}
+main{max-width:1050px;margin:22px auto;padding:0 16px}
+label{display:block;font-size:12.5px;font-weight:600;color:var(--soft);margin:12px 0 4px}
+input,select,textarea{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:7px;font:inherit;background:var(--paper)}
+.btn{border:0;border-radius:7px;padding:10px 16px;font:inherit;font-weight:600;cursor:pointer;background:var(--forest);color:#fff}.btn:hover{background:var(--forest-d)}
+.btn.g{background:none;color:var(--ink);border:1px solid var(--line)}.btn:disabled{opacity:.45;cursor:default}
+:focus-visible{outline:2px solid var(--forest);outline-offset:2px}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:0 14px}.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:end;margin:12px 0}
+table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:8px;border-bottom:1px solid var(--line);font-size:14px}th{color:var(--soft);font-weight:600}
+.msg{margin:0 0 14px;padding:10px 14px;border-radius:7px;background:#e3eee9}.msg.err{background:#f6e3de;color:var(--brick)}
+.tag{padding:1px 9px;border-radius:10px;background:#e4e8e2;font-size:12px}.tag.active{background:#dcebe3;color:var(--forest)}.tag.expired,.tag.voided{background:#f6e3de;color:var(--brick)}
+#login{max-width:380px;margin:12vh auto;padding:0 16px}#app{display:none}[hidden]{display:none!important}
+#print{display:none}.v{border:1px solid #000;padding:12px;margin:0 0 10px;display:flex;gap:14px;break-inside:avoid;width:430px;justify-content:space-between}.v svg{width:110px;height:110px}.v h3{font-size:24px}
+@media print{body>*:not(#print){display:none!important}#print{display:block}}
+
+nav{display:flex;flex-wrap:wrap}video{width:100%;max-width:420px;border-radius:8px;background:#000}
+.btn.sm{padding:5px 10px;font-size:13px}.btn.dng{background:none;color:var(--brick);border:1px solid rgba(174,69,48,.4)}
+</style></head><body>
+
+<div id="login"><div class="card"><div class="brand" id="lbrand"></div>
+<p style="color:var(--soft)">Sign in with your name and PIN. The first person to sign in becomes the first admin; after that, admins add other admins and end users.</p>
+<div id="lmsg"></div><label>Your name</label><input id="ln" autocomplete="off"><label>PIN (4+ digits)</label><input id="lp" type="password" inputmode="numeric" autocomplete="off">
+<p><button class="btn" id="lb" style="width:100%">Enter</button></p></div></div>
+
+<div id="app"><div class="top"><div class="brand" id="tbrand"></div>
+<nav><button data-t="list" data-a="1" class="on">Vouchers</button><button data-t="gen" data-a="1">Generate</button><button data-t="cfg" data-a="1">Numbering</button><button data-t="usr" data-a="1">Users</button><button data-t="log" data-a="1">Audit log</button><button data-t="brd" data-a="1">Branding</button><button data-t="bak" data-a="1">Backup</button><button data-t="rep">Reports</button><button data-t="red">Redeem</button></nav>
+<span id="who" style="color:var(--soft);font-size:13px"></span><button class="btn g sm" id="cpin">Change PIN</button><button class="btn g sm" id="out">Sign out</button></div>
+<main><div id="msg"></div>
+
+<div class="card" id="list" hidden><div class="bar"><div><label>Find by number</label><input id="q" placeholder="Exact number"></div>
+<div><label>Category</label><select id="fc"><option value="">All</option><option value="PAID">Paid Voucher</option><option value="COMPLIMENTARY">Complimentary Voucher</option></select></div>
+<button class="btn" id="go">Search</button><button class="btn g" id="prt">Print selected</button><label style="margin:0 0 8px"><input type="checkbox" id="showR" style="width:auto"> Show recipient on print</label></div>
+<table><thead><tr><th></th><th>Number</th><th>Category</th><th>Valid</th><th>Status</th><th>Recipient</th><th></th></tr></thead><tbody id="rows"></tbody></table></div>
+
+<div class="card" id="ed" hidden><h2>Edit voucher <span id="en"></span></h2><div class="row">
+<div><label>Category</label><select id="ec"><option value="PAID">Paid Voucher</option><option value="COMPLIMENTARY">Complimentary Voucher</option></select></div>
+<div><label>Start date</label><input id="es" type="date"></div><div><label>End date</label><input id="ee" type="date"></div></div>
+<label>Title or description</label><input id="et"><div class="row"><div><label>Recipient name</label><input id="er"></div><div><label>Contact number</label><input id="ep"></div></div>
+<label>Remarks</label><textarea id="em" rows="2"></textarea>
+<div class="bar"><button class="btn" id="esv">Save changes</button><button class="btn g" id="ecn">Cancel</button></div></div>
+
+<div class="card" id="gen" hidden><h2>Generate voucher series</h2><div class="row">
+<div><label>Quantity (1–400)</label><input id="gq" type="number" min="1" max="400" value="10"></div>
+<div><label>Category</label><select id="gc"><option value="PAID">Paid Voucher</option><option value="COMPLIMENTARY">Complimentary Voucher</option></select></div>
+<div><label>Start date</label><input id="gs" type="date"></div><div><label>End date</label><input id="ge" type="date"></div></div>
+<label>Title or description (optional)</label><input id="gt">
+<div class="row"><div><label>Recipient name (optional)</label><input id="gr"></div><div><label>Contact number (optional)</label><input id="gp"></div></div>
+<label>Remarks (optional)</label><textarea id="gm" rows="2"></textarea>
+<label>Manual voucher number (optional: creates one voucher with this number instead)</label><input id="gn">
+<div class="bar"><button class="btn g" id="pv">Preview range</button><button class="btn" id="gb" disabled>Confirm and generate</button></div><div id="gres"></div></div>
+
+<div class="card" id="cfg" hidden><h2>Voucher number configuration</h2><div class="row">
+<div><label>Starting voucher number</label><input id="cs" type="number" min="0"></div><div><label>Digits (0 = no padding)</label><input id="cd" type="number" min="0" max="12" value="0"></div>
+<div><label>Prefix (optional)</label><input id="cp"></div><div><label>Suffix (optional)</label><input id="cx"></div></div>
+<p>Next available number: <strong id="cn">–</strong></p><button class="btn" id="cb">Save configuration</button></div>
+
+<div class="card" id="usr" hidden><h2>Users</h2>
+<table><thead><tr><th>Name</th><th>Role</th><th></th></tr></thead><tbody id="urows"></tbody></table>
+<h3 style="margin-top:24px">Add a user</h3><div class="row"><div><label>Name</label><input id="an" autocomplete="off"></div>
+<div><label>PIN (4+ digits)</label><input id="ap" type="password" inputmode="numeric" autocomplete="off"></div>
+<div><label>Role</label><select id="ar"><option value="user">End user (redeem only)</option><option value="admin">Admin</option></select></div></div>
+<p><button class="btn" id="ab">Add user</button></p></div>
+
+<div class="card" id="brd" hidden><h2>Branding</h2>
+<p>Your company name and logo appear on the sign-in page, the top bar, printed vouchers and printed reports.</p>
+<label>Company name</label><input id="bn" maxlength="100" autocomplete="off">
+<label>Logo (optional: PNG, JPG or WebP; it is resized automatically)</label><input id="bl" type="file" accept="image/png,image/jpeg,image/webp">
+<div id="bprev" style="margin:12px 0"></div>
+<div class="bar"><button class="btn" id="bsv">Save branding</button><button class="btn g" id="brm">Remove logo</button></div></div>
+
+<div class="card" id="bak" hidden><h2>Backup and restore</h2>
+<h3>Backup</h3><p>Downloads one file with everything: numbering settings, users, vouchers (including redeemed, voided and deleted ones) and the audit log. Keep the file somewhere safe: it contains users' PINs in scrambled form.</p>
+<button class="btn" id="bkb">Download backup</button>
+<h3 style="margin-top:26px">Restore</h3><p>Choose a backup file. Restore adds anything that is missing and never overwrites or deletes existing records, so it is safe to run more than once. Use it to rebuild a new or emptied database.</p>
+<input type="file" id="bkf" accept=".json,application/json"><div id="bkplan"></div>
+<div class="bar"><button class="btn" id="bkgo" disabled>Restore now</button></div><div id="bkprog"></div></div>
+
+<div class="card" id="log" hidden><h2>Audit log</h2><table><tbody id="logrows"></tbody></table></div>
+
+<div class="card" id="rep" hidden><h2>Voucher report</h2>
+<div class="row"><div><label>Date based on</label><select id="rb"><option value="createdAt">Date created</option><option value="startDate">Start date</option><option value="endDate">End date</option><option value="redeemedAt">Date redeemed</option></select></div>
+<div><label>From date</label><input id="rf" type="date"></div><div><label>To date</label><input id="rt" type="date"></div></div>
+<div class="row"><div><label>Category</label><select id="rc"><option value="">All categories</option><option value="PAID">Paid Voucher</option><option value="COMPLIMENTARY">Complimentary Voucher</option></select></div>
+<div><label>Voucher number from</label><input id="rnf" placeholder="e.g. 100001"></div><div><label>Voucher number to</label><input id="rnt" placeholder="e.g. 100500"></div>
+<div><label>Status</label><select id="rs"><option value="">All statuses</option><option value="active">Active</option><option value="not yet valid">Not yet valid</option><option value="expired">Expired</option><option value="redeemed">Redeemed</option><option value="voided">Voided</option></select></div></div>
+<div class="bar"><button class="btn" id="rrun">Run report</button><button class="btn g" id="rcsv">Export CSV</button><button class="btn g" id="rprt">Print report</button></div>
+<div id="rsum"></div><div style="overflow-x:auto"><table><thead id="rhead"></thead><tbody id="rbody"></tbody></table></div></div>
+
+<div class="card" id="red" hidden><h2>Redeem a voucher</h2>
+<div class="bar"><div style="flex:1;min-width:220px"><label>Type or select the voucher number</label><input id="rn" list="dl" autocomplete="off" placeholder="Voucher number"><datalist id="dl"></datalist></div>
+<button class="btn" id="rl">Look up</button><button class="btn g" id="sc">Scan QR code</button></div>
+<div id="cam" hidden><video id="vid" playsinline muted></video><p><button class="btn g sm" id="scs">Stop camera</button></p></div>
+<div id="sres"></div></div>
+</main></div><div id="print"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+(function(){"use strict";
+// STEP 4 of README.md: paste YOUR new project's firebaseConfig values between the quotes.
+const FIREBASE_CONFIG={apiKey: "AIzaSyACu2vtPryh90P65Ky1mfZGuXh3oXWOJyM",
+
+  authDomain: "voucher-system-91b1c.firebaseapp.com",
+
+  projectId: "voucher-system-91b1c",
+
+  storageBucket: "voucher-system-91b1c.firebasestorage.app",
+
+  messagingSenderId: "834236502291",
+
+  appId: "1:834236502291:web:462d768c73857437dacae6"
+};
+if(FIREBASE_CONFIG.apiKey==="YOUR_API_KEY"){document.addEventListener("DOMContentLoaded",()=>{document.body.insertAdjacentHTML("afterbegin",'<div style="background:#AE4530;color:#fff;padding:10px 16px;text-align:center">Setup needed: paste your Firebase config into index.html (see README.md). Nothing will work until then.</div>')});throw new Error("Firebase is not configured yet")}
+firebase.initializeApp(FIREBASE_CONFIG);const db=firebase.firestore(),FV=firebase.firestore.FieldValue,ts=()=>FV.serverTimestamp();
+const $=id=>document.getElementById(id),esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const say=(t,e)=>{$("msg").innerHTML=t?`<div class="msg ${e?"err":""}" role="status">${esc(t)}</div>`:""};
+const need=(ok,m)=>{if(!ok)throw new Error(m)};
+const run=async f=>{try{say("");return await f()}catch(e){say(e.code==="permission-denied"?"Nothing was saved. A voucher number in this range may already exist, or the data was rejected. Preview again and retry.":(e.message||String(e)),true)}};
+const catName=c=>c==="PAID"?"Paid Voucher":"Complimentary Voucher";
+const today=()=>new Date().toLocaleDateString("en-CA");
+const stat=v=>v.status!=="active"?v.status:today()<v.startDate?"not yet valid":today()>v.endDate?"expired":"active";
+const fmt=(c,n)=>c.prefix+(c.digits?String(n).padStart(c.digits,"0"):String(n))+c.suffix;
+const maxN=c=>c.digits?Math.pow(10,c.digits)-1:Number.MAX_SAFE_INTEGER;
+const rid=()=>btoa(String.fromCharCode.apply(null,crypto.getRandomValues(new Uint8Array(16)))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=/g,"");
+const CFG=()=>db.collection("vcfg").doc("numbering"),V=n=>db.collection("vouchers").doc(n),U=n=>db.collection("vusers").doc(n.toLowerCase().replace(/[^a-z0-9]+/g,"_"));
+const audit=(tx,o)=>tx.set(db.collection("vaudit").doc(),Object.assign({},o,{actor:me,at:ts()}));
+const aud=o=>db.collection("vaudit").add(Object.assign({},o,{actor:me,at:ts()}));
+async function hp(n,p){const s=n.toLowerCase()+":"+p;if(window.crypto&&crypto.subtle){const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(s));return Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,"0")).join("")}let h=5381;for(const c of s)h=((h<<5)+h+c.charCodeAt(0))|0;return"x"+h}
+let me=sessionStorage.getItem("vu"),role=sessionStorage.getItem("vr"),cache=[],pending=null,users=[],editId=null;
+const isAdmin=()=>role==="admin";
+// ---- sign in ----
+function enter(){$("login").hidden=true;$("app").style.display="block";$("who").textContent=me+" ("+(isAdmin()?"Admin":"End user")+")";
+ document.querySelectorAll("nav [data-a]").forEach(b=>b.hidden=!isAdmin());
+ const q=new URLSearchParams(location.search).get("q");show("red");if(q)lookupQr(q);else if(isAdmin())show("list")}
+$("lb").onclick=async()=>{const n=$("ln").value.trim(),p=$("lp").value,m=$("lmsg");m.innerHTML="";
+ try{need(n&&p.length>=4,"Enter your name and a PIN of at least 4 digits.");const ref=U(n),h=await hp(n,p),s=await ref.get();let r="admin";
+  if(s.exists){need(s.data().hash===h,"Wrong PIN.");r=s.data().role||"admin"}
+  else{const any=await db.collection("vusers").limit(1).get();need(any.empty,"No account for that name. Ask an admin to add you.");await ref.set({name:n,hash:h,role:"admin",created:ts()})}
+  me=n;role=r;sessionStorage.setItem("vu",n);sessionStorage.setItem("vr",r);enter()}catch(e){m.innerHTML=`<div class="msg err">${esc(e.message)}</div>`}};
+$("lp").onkeydown=e=>{if(e.key==="Enter")$("lb").click()};
+$("out").onclick=()=>{sessionStorage.clear();location.href=location.pathname};
+$("cpin").onclick=()=>run(async()=>{const cur=prompt("Current PIN");if(cur===null)return;const s=await U(me).get();need(s.exists&&s.data().hash===await hp(me,cur),"Current PIN is wrong.");
+ const nw=prompt("New PIN (4+ digits)");if(nw===null)return;need(nw.length>=4,"PIN must be at least 4 characters.");await U(me).update({hash:await hp(me,nw)});say("PIN changed.")});
+if(me&&role)enter();
+const tabs=["list","ed","gen","cfg","usr","log","brd","bak","rep","red"];
+function show(t){stopCam();if(t!=="red"&&t!=="rep"&&!isAdmin())t="red";tabs.forEach(x=>$(x).hidden=x!==t);document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.t===t||(t==="ed"&&b.dataset.t==="list")));
+ if(t==="list")search();if(t==="cfg")loadCfg();if(t==="log")loadLog();if(t==="usr")loadUsers();if(t==="brd")loadBrd();if(t==="red")loadDl()}
+document.querySelector("nav").onclick=e=>{if(e.target.dataset.t){say("");show(e.target.dataset.t)}};
+// ---- vouchers: list, edit, void, delete, print (admin) ----
+function search(){return run(async()=>{const n=$("q").value.trim(),c=$("fc").value;let docs;
+ if(n){const s=await V(n).get();docs=s.exists?[s]:[]}else docs=(await db.collection("vouchers").orderBy("seq","desc").limit(500).get()).docs;
+ cache=docs.map(d=>Object.assign({id:d.id},d.data())).filter(v=>v.status!=="deleted"&&(!c||v.category===c));
+ $("rows").innerHTML=cache.map((v,i)=>`<tr><td><input type="checkbox" data-i="${i}" style="width:auto" aria-label="Select ${esc(v.voucherNumber)}"></td><td>${esc(v.voucherNumber)}</td><td>${catName(v.category)}</td><td>${esc(v.startDate)} to ${esc(v.endDate)}</td><td><span class="tag ${stat(v).split(" ")[0]}">${stat(v)}</span></td><td>${esc(v.recipientName)}</td><td style="white-space:nowrap"><button class="btn g sm" data-edit="${i}">Edit</button> ${v.status==="active"?`<button class="btn g sm" data-void="${esc(v.id)}">Void</button> `:""}<button class="btn dng sm" data-del="${esc(v.id)}">Delete</button></td></tr>`).join("")||`<tr><td colspan="7">No vouchers found. Generate a series to get started.</td></tr>`})}
+$("go").onclick=search;
+const setStatus=(id,st,type)=>db.runTransaction(async tx=>{const s=await tx.get(V(id));need(s.exists&&s.data().status!=="deleted","Voucher not found.");if(st==="voided")need(s.data().status==="active","Only active vouchers can be voided.");
+ tx.update(V(id),{status:st,modifiedAt:ts(),modifiedBy:me});audit(tx,{type:type,number:id})});
+$("rows").onclick=e=>{const d=e.target.dataset;
+ if(d.void&&confirm("Void this voucher? It stays in the list as voided and its number is not reused."))run(async()=>{await setStatus(d.void,"voided","voucher_voided");search()});
+ if(d.del&&confirm("Delete this voucher? It disappears from the list. Its number stays reserved and is never reused."))run(async()=>{await setStatus(d.del,"deleted","voucher_deleted");search()});
+ if(d.edit!==undefined){const v=cache[d.edit];editId=v.id;$("en").textContent=v.voucherNumber;$("ec").value=v.category;$("es").value=v.startDate;$("ee").value=v.endDate;$("et").value=v.title||"";$("er").value=v.recipientName||"";$("ep").value=v.contactNumber||"";$("em").value=v.remarks||"";show("ed")}};
+$("ecn").onclick=()=>show("list");
+$("esv").onclick=()=>run(async()=>{const s=form("e");await db.runTransaction(async tx=>{const c=await tx.get(V(editId));need(c.exists&&c.data().status!=="deleted","Voucher not found.");
+ tx.update(V(editId),Object.assign({},s,{modifiedAt:ts(),modifiedBy:me}));audit(tx,{type:"voucher_edited",number:editId})});say("Voucher saved.");show("list")});
+$("prt").onclick=()=>{const sel=Array.from(document.querySelectorAll("#rows input:checked")).map(c=>cache[c.dataset.i]);if(!sel.length)return say("Select at least one voucher to print.",true);
+ $("print").innerHTML=sel.map(v=>{const qr=qrcode(0,"M");qr.addData(location.origin+location.pathname+"?q="+v.qrId);qr.make();
+ return `<div class="v"><div>${brandBlock()}<h3>${esc(v.voucherNumber)}</h3><div>${catName(v.category)}</div>${v.title?`<div>${esc(v.title)}</div>`:""}<div>Valid ${esc(v.startDate)} to ${esc(v.endDate)}</div>${$("showR").checked&&(v.recipientName||v.contactNumber)?`<div>${esc(v.recipientName)} ${esc(v.contactNumber)}</div>`:""}</div>${qr.createSvgTag(3,0)}</div>`}).join("");print()};
+// ---- generate ----
+async function getCfg(){const s=await CFG().get();need(s.exists,"Numbering is not set up yet. Open Numbering first.");return s.data()}
+async function pick(c,qty){const seqs=[];let n=c.nextNumber; // skips numbers already used (e.g. entered manually or deleted)
+ while(seqs.length<qty){need(n<=maxN(c),"The voucher number series is exhausted.");
+  const want=Math.min(qty-seqs.length,maxN(c)-n+1),nums=Array.from({length:want},(_,i)=>n+i);
+  const snaps=await Promise.all(nums.map(x=>V(fmt(c,x)).get()));nums.forEach((x,i)=>{if(!snaps[i].exists)seqs.push(x)});n+=want}
+ return seqs}
+function form(p){const g=k=>$(p+k).value.trim(),s={category:g("c"),startDate:g("s"),endDate:g("e"),title:g("t"),recipientName:g("r"),contactNumber:g("p"),remarks:g("m")};
+ need(s.startDate&&s.endDate,"Enter a start and end date.");need(s.endDate>=s.startDate,"End date must be on or after the start date.");
+ need(s.title.length<=200&&s.recipientName.length<=120&&s.contactNumber.length<=40&&s.remarks.length<=500,"An optional field is too long.");return s}
+const mk=(num,seq,s)=>Object.assign({voucherNumber:num,seq:seq},s,{status:"active",qrId:rid(),createdAt:ts(),createdBy:me,modifiedAt:ts(),modifiedBy:me,redeemedAt:null,redeemedBy:null});
+$("pv").onclick=()=>run(async()=>{pending=null;$("gb").disabled=true;const n=$("gn").value.trim();
+ if(n){need(/^[A-Za-z0-9._-]{1,60}$/.test(n),"Use letters, digits, dot, dash or underscore only.");need(!(await V(n).get()).exists,"Voucher number "+n+" already exists.");
+  $("gres").innerHTML=`<div class="msg">Will create 1 voucher: ${esc(n)}</div>`;$("gb").disabled=false;return}
+ const qty=+$("gq").value;need(Number.isInteger(qty)&&qty>=1&&qty<=400,"Quantity must be a whole number from 1 to 400.");
+ const c=await getCfg(),seqs=await pick(c,qty);pending={c:c,seqs:seqs};
+ $("gres").innerHTML=`<div class="msg">${qty} vouchers: ${esc(fmt(c,seqs[0]))} to ${esc(fmt(c,seqs[qty-1]))}</div>`;$("gb").disabled=false});
+$("gb").onclick=()=>run(async()=>{const n=$("gn").value.trim(),s=form("g");let first,last,count;
+ if(n){await db.runTransaction(async tx=>{need(!(await tx.get(V(n))).exists,"Voucher number "+n+" already exists.");tx.set(V(n),mk(n,null,s));audit(tx,{type:"manual_voucher",number:n})});first=last=n;count=1}
+ else{need(pending&&pending.seqs.length===+$("gq").value,"Preview the range first.");const c=pending.c,seqs=pending.seqs;
+  await db.runTransaction(async tx=>{const cur=(await tx.get(CFG())).data();
+   need(cur.nextNumber===c.nextNumber&&cur.prefix===c.prefix&&cur.suffix===c.suffix&&cur.digits===c.digits,"Numbering changed since the preview. Preview again.");
+   seqs.forEach(q=>tx.set(V(fmt(c,q)),mk(fmt(c,q),q,s)));tx.update(CFG(),{nextNumber:seqs[seqs.length-1]+1});
+   audit(tx,{type:"series_generated",first:fmt(c,seqs[0]),last:fmt(c,seqs[seqs.length-1]),quantity:seqs.length,category:s.category})});
+  first=fmt(c,seqs[0]);last=fmt(c,seqs[seqs.length-1]);count=seqs.length}
+ pending=null;$("gb").disabled=true;$("gres").innerHTML=`<div class="msg">Created ${count} voucher(s): ${esc(first)} to ${esc(last)}. Rejected: 0.</div>`});
+// ---- numbering config ----
+async function loadCfg(){const s=await CFG().get();if(!s.exists){$("cn").textContent="Not set up";return}
+ const c=s.data();$("cs").value=c.startNumber;$("cd").value=c.digits;$("cp").value=c.prefix;$("cx").value=c.suffix;$("cn").textContent=fmt(c,c.nextNumber)}
+$("cb").onclick=()=>run(async()=>{const c={startNumber:+$("cs").value,digits:+$("cd").value,prefix:$("cp").value.trim(),suffix:$("cx").value.trim()},A=/^[A-Za-z0-9._-]{0,20}$/;
+ need(A.test(c.prefix)&&A.test(c.suffix),"Prefix and suffix may only use letters, digits, dot, dash and underscore.");
+ need(Number.isInteger(c.startNumber)&&c.startNumber>=0&&Number.isInteger(c.digits)&&c.digits>=0&&c.digits<=12,"Enter a whole starting number and 0–12 digits.");
+ c.nextNumber=c.startNumber;need(c.startNumber<=maxN(c),"The starting number does not fit in the configured digits.");
+ const exists=$("cn").textContent!=="Not set up"&&$("cn").textContent!=="–";
+ if(exists&&!confirm("Change the numbering? This only affects vouchers generated from now on. Existing vouchers are never renumbered."))return;
+ await db.runTransaction(async tx=>{const old=await tx.get(CFG());need(!(await tx.get(V(fmt(c,c.startNumber)))).exists,fmt(c,c.startNumber)+" is already used. Choose a higher starting number.");
+  tx.set(CFG(),Object.assign({},c,{updatedBy:me,updatedAt:ts()}));audit(tx,{type:"config_changed",before:old.exists?old.data():null,after:c})});
+ say("Saved. Next voucher number: "+fmt(c,c.startNumber));loadCfg()});
+// ---- users (admin): add, change role, reset PIN, delete ----
+function loadUsers(){return run(async()=>{users=(await db.collection("vusers").get()).docs.map(d=>Object.assign({id:d.id},d.data(),{role:d.data().role||"admin"}));
+ $("urows").innerHTML=users.map(u=>`<tr><td>${esc(u.name)}${u.name===me?" (you)":""}</td><td><select data-role="${esc(u.id)}" ${u.name===me?"disabled":""} aria-label="Role for ${esc(u.name)}"><option value="user" ${u.role==="user"?"selected":""}>End user</option><option value="admin" ${u.role==="admin"?"selected":""}>Admin</option></select></td><td style="white-space:nowrap"><button class="btn g sm" data-pin="${esc(u.id)}">Reset PIN</button> ${u.name===me?"":`<button class="btn dng sm" data-udel="${esc(u.id)}">Delete</button>`}</td></tr>`).join("")})}
+const admins=()=>users.filter(u=>u.role==="admin").length;
+$("urows").onchange=e=>{const id=e.target.dataset.role;if(!id)return;const u=users.find(x=>x.id===id);run(async()=>{
+ if(e.target.value==="user")need(admins()>1,"There must be at least one admin.");await U(u.name).update({role:e.target.value});await aud({type:"user_role_changed",number:u.name+" → "+e.target.value});loadUsers()}).then(loadUsers)};
+$("urows").onclick=e=>{const d=e.target.dataset;
+ if(d.pin){const u=users.find(x=>x.id===d.pin),p=prompt("New PIN for "+u.name+" (4+ digits)");if(p!==null)run(async()=>{need(p.length>=4,"PIN must be at least 4 characters.");await U(u.name).update({hash:await hp(u.name,p)});await aud({type:"user_pin_reset",number:u.name});say("PIN reset for "+u.name+".")})}
+ if(d.udel){const u=users.find(x=>x.id===d.udel);if(confirm("Delete user "+u.name+"? They will no longer be able to sign in."))run(async()=>{need(u.role!=="admin"||admins()>1,"There must be at least one admin.");await U(u.name).delete();await aud({type:"user_deleted",number:u.name});loadUsers()})}};
+$("ab").onclick=()=>run(async()=>{const n=$("an").value.trim(),p=$("ap").value,r=$("ar").value;need(n&&p.length>=4,"Enter a name and a PIN of at least 4 digits.");
+ need(!(await U(n).get()).exists,"That name already has an account.");await U(n).set({name:n,hash:await hp(n,p),role:r,created:ts()});await aud({type:"user_added",number:n+" ("+r+")"});
+ $("an").value=$("ap").value="";say(n+" can now sign in as "+(r==="admin"?"an admin":"an end user")+".");loadUsers()});
+function loadLog(){return run(async()=>{const s=await db.collection("vaudit").orderBy("at","desc").limit(50).get();
+ $("logrows").innerHTML=s.docs.map(d=>{const l=d.data();return `<tr><td>${esc(l.at&&l.at.toDate?l.at.toDate().toLocaleString():"")}</td><td>${esc(l.type.replace(/_/g," "))}</td><td>${esc(l.actor)}</td><td>${esc(l.first?l.first+" to "+l.last:l.number||"")}</td></tr>`}).join("")||"<tr><td>No activity yet.</td></tr>"})}
+// ---- branding: company name and logo (admin edits; everyone sees it) ----
+let brand={name:"",logo:"",},newLogo=null;
+const okLogo=s=>typeof s==="string"&&s.length<=300000&&/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+\/=]+$/.test(s);
+const bName=()=>brand.name||"Voucher Ledger";
+const brandHtml=()=>(okLogo(brand.logo)?`<img src="${brand.logo}" alt="">`:"")+`<h1>${esc(bName())}</h1>`;
+const brandBlock=()=>okLogo(brand.logo)||brand.name?`<div class="bh">${okLogo(brand.logo)?`<img src="${brand.logo}" alt="">`:""}${esc(brand.name)}</div>`:"";
+function applyBrand(){document.title=bName();$("lbrand").innerHTML=brandHtml();$("tbrand").innerHTML=brandHtml()}
+applyBrand();db.collection("vbrand").doc("main").get().then(s=>{if(s.exists){brand=s.data();applyBrand()}}).catch(()=>{});
+const prevBrd=l=>{$("bprev").innerHTML=okLogo(l)?`<img src="${l}" alt="Logo preview" style="max-height:80px;max-width:240px">`:"<em>No logo</em>"};
+function loadBrd(){$("bn").value=brand.name||"";newLogo=null;$("bl").value="";prevBrd(brand.logo)}
+$("bl").onchange=()=>run(async()=>{const f=$("bl").files[0];if(!f)return;need(/^image\/(png|jpeg|webp)$/.test(f.type),"Choose a PNG, JPG or WebP image.");need(f.size<=5e6,"That image is too large (max 5 MB).");
+ const url=URL.createObjectURL(f),img=new Image();await new Promise((ok,no)=>{img.onload=ok;img.onerror=()=>no(new Error("Could not read that image."));img.src=url});
+ const k=Math.min(1,400/Math.max(img.width,img.height)),cv2=document.createElement("canvas"),png=f.type==="image/png";cv2.width=Math.max(1,Math.round(img.width*k));cv2.height=Math.max(1,Math.round(img.height*k));
+ const x=cv2.getContext("2d");if(!png){x.fillStyle="#fff";x.fillRect(0,0,cv2.width,cv2.height)}x.drawImage(img,0,0,cv2.width,cv2.height);URL.revokeObjectURL(url);
+ const out=cv2.toDataURL(png?"image/png":"image/jpeg",.85);need(okLogo(out),"That image is still too large after resizing. Try a simpler logo.");newLogo=out;prevBrd(out)});
+$("brm").onclick=()=>{newLogo="";$("bl").value="";prevBrd("")};
+$("bsv").onclick=()=>run(async()=>{need(isAdmin(),"Admins only.");const name=$("bn").value.trim();need(name.length<=100,"The company name is too long (max 100 characters).");
+ const logo=newLogo===null?(brand.logo||""):newLogo;await db.collection("vbrand").doc("main").set({name:name,logo:logo,updatedBy:me,updatedAt:ts()});
+ brand={name:name,logo:logo};applyBrand();await aud({type:"branding_changed",number:name||"(no name)"});newLogo=null;say("Branding saved.")});
+// ---- backup & restore (admin) ----
+const COLS=[["vcfg","Numbering"],["vbrand","Branding"],["vusers","Users"],["vouchers","Vouchers"],["vaudit","Audit log"]];
+const ser=x=>{if(x&&typeof x.toMillis==="function")return{__ts:x.toMillis()};if(Array.isArray(x))return x.map(ser);if(x&&typeof x==="object"){const o={};for(const k in x)o[k]=ser(x[k]);return o}return x};
+const de=x=>{if(x&&typeof x==="object"){if(Array.isArray(x))return x.map(de);if(Object.keys(x).length===1&&typeof x.__ts==="number")return firebase.firestore.Timestamp.fromMillis(x.__ts);const o={};for(const k in x)o[k]=de(x[k]);return o}return x};
+const okDoc={
+ vouchers:(id,d)=>/^[A-Za-z0-9._-]{1,60}$/.test(id)&&d.voucherNumber===id&&["PAID","COMPLIMENTARY"].includes(d.category)&&typeof d.startDate==="string"&&typeof d.endDate==="string"&&d.endDate>=d.startDate&&["active","redeemed","voided","deleted"].includes(d.status)&&typeof d.qrId==="string"&&d.qrId.length>=20,
+ vusers:(id,d)=>typeof d.name==="string"&&typeof d.hash==="string"&&["admin","user"].includes(d.role||"admin"),
+ vbrand:(id,d)=>id==="main"&&typeof d.name==="string"&&typeof d.logo==="string"&&d.logo.length<=300000,
+ vaudit:(id,d)=>typeof d.type==="string"&&!!d.at&&typeof d.at.__ts==="number"};
+let plan=null;
+$("bkb").onclick=()=>run(async()=>{need(isAdmin(),"Admins only.");$("bkprog").textContent="Preparing backup…";
+ const out={app:"voucher-ledger",version:1,createdAt:new Date().toISOString(),createdBy:me,collections:{}},n={};
+ for(const c of COLS){const s=await db.collection(c[0]).get();out.collections[c[0]]={};s.docs.forEach(d=>{out.collections[c[0]][d.id]=ser(d.data())});n[c[0]]=s.size}
+ const a=document.createElement("a"),d=new Date(),p=x=>String(x).padStart(2,"0");
+ a.href=URL.createObjectURL(new Blob([JSON.stringify(out)],{type:"application/json"}));a.download="voucher-backup-"+today()+"-"+p(d.getHours())+p(d.getMinutes())+".json";document.body.appendChild(a);a.click();a.remove();
+ await aud({type:"backup_created",number:n.vouchers+" vouchers, "+n.vusers+" users"});$("bkprog").innerHTML=`<div class="msg">Backup downloaded: ${n.vouchers} vouchers, ${n.vusers} users, ${n.vaudit} audit entries.</div>`});
+$("bkf").onchange=()=>run(async()=>{plan=null;$("bkgo").disabled=true;$("bkplan").innerHTML="";$("bkprog").textContent="";const f=$("bkf").files[0];if(!f)return;
+ need(isAdmin(),"Admins only.");let data;try{data=JSON.parse(await f.text())}catch(e){throw new Error("That file is not a valid backup.")}
+ need(data&&data.app==="voucher-ledger"&&data.version===1&&data.collections,"That file is not a Voucher Ledger backup.");
+ const P={};
+ for(const [c] of COLS){const src=data.collections[c]||{};
+  if(c==="vcfg"){const n=src.numbering,cur=await CFG().get();let act="none";
+   if(n&&Number.isInteger(n.nextNumber)&&Number.isInteger(n.startNumber)&&Number.isInteger(n.digits)&&typeof n.prefix==="string"&&typeof n.suffix==="string"){if(!cur.exists)act="create";else if(n.nextNumber>cur.data().nextNumber)act="advance"}
+   P.vcfg={total:n?1:0,add:act==="none"?[]:[act],skip:act==="none"&&n?1:0,bad:0,cfg:n};continue}
+  const ex=new Set((await db.collection(c).get()).docs.map(d=>d.id)),add=[];let skip=0,bad=0;
+  Object.keys(src).forEach(id=>{if(ex.has(id))skip++;else if(okDoc[c](id,src[id]))add.push([id,src[id]]);else bad++});
+  P[c]={total:Object.keys(src).length,add:add,skip:skip,bad:bad}}
+ plan=P;const todo=P.vcfg.add.length+P.vbrand.add.length+P.vusers.add.length+P.vouchers.add.length+P.vaudit.add.length;
+ $("bkplan").innerHTML=`<p>Backup made ${esc(data.createdAt||"")} by ${esc(data.createdBy||"")}.</p><table><thead><tr><th>Data</th><th>In file</th><th>Will be added</th><th>Already present</th><th>Rejected</th></tr></thead><tbody>${COLS.map(c=>`<tr><td>${c[1]}</td><td>${P[c[0]].total}</td><td>${P[c[0]].add.length}</td><td>${P[c[0]].skip}</td><td>${P[c[0]].bad}</td></tr>`).join("")}</tbody></table>${todo?"":'<p class="msg">Nothing to restore: everything in this file is already present.</p>'}`;
+ $("bkgo").disabled=!todo});
+$("bkgo").onclick=()=>run(async()=>{need(isAdmin()&&plan,"Choose a backup file first.");
+ if(!confirm("Restore the missing records from this backup? Existing records are not changed."))return;
+ $("bkgo").disabled=true;let added=0,failed=0;const P=plan,prog=$("bkprog");
+ for(const c of ["vbrand","vusers","vouchers","vaudit"]){const items=P[c].add;
+  for(let i=0;i<items.length;i+=400){const part=items.slice(i,i+400),b=db.batch();
+   part.forEach(([id,d])=>{const x=de(d);if(c!=="vusers")x.restoredAt=ts();b.set(db.collection(c).doc(id),x)});
+   try{await b.commit();added+=part.length}catch(e){failed+=part.length}
+   prog.textContent="Restoring… "+(added+failed)+" records processed"}}
+ const act=P.vcfg.add[0],n=P.vcfg.cfg;
+ try{if(act==="create"){await CFG().set(de(n));added++}else if(act==="advance"){await CFG().update({nextNumber:n.nextNumber});added++}}catch(e){failed++}
+ await aud({type:"backup_restored",number:added+" added, "+failed+" failed"});plan=null;$("bkf").value="";$("bkplan").innerHTML="";
+ prog.innerHTML=`<div class="msg ${failed?"err":""}">Restore finished: ${added} record(s) added${failed?", "+failed+" could not be saved. Choose the file again and re-run; records already restored are skipped.":"."}</div>`});
+// ---- reports (everyone): date range, category, number range, status ----
+let repRows=[];
+const dOf=t=>t&&t.toDate?t.toDate().toLocaleDateString("en-CA"):"";
+const np=s=>{const m=String(s||"").match(/\d+/);return m?parseInt(m[0],10):NaN};
+const repCols=()=>["Voucher number","Category","Start date","End date","Status","Date created","Redeemed at","Redeemed by"].concat(isAdmin()?["Recipient","Contact"]:[]);
+const repCells=v=>[v.voucherNumber,catName(v.category),v.startDate,v.endDate,stat(v),dOf(v.createdAt),v.redeemedAt&&v.redeemedAt.toDate?v.redeemedAt.toDate().toLocaleString():"",v.redeemedBy||""].concat(isAdmin()?[v.recipientName||"",v.contactNumber||""]:[]);
+function runReport(){return run(async()=>{
+ const f=$("rf").value,t=$("rt").value,basis=$("rb").value,cat=$("rc").value,st=$("rs").value,a=$("rnf").value.trim(),b=$("rnt").value.trim(),nf=np(a),nt=np(b);
+ need(!f||!t||f<=t,"The from date must be on or before the to date.");
+ need((!a||!isNaN(nf))&&(!b||!isNaN(nt)),"Voucher numbers must contain digits.");need(isNaN(nf)||isNaN(nt)||nf<=nt,"The first voucher number must not be higher than the last.");
+ let q=db.collection("vouchers");if(cat)q=q.where("category","==",cat);
+ const s=await q.limit(5001).get(),capped=s.size>5000;
+ let rows=s.docs.slice(0,5000).map(d=>d.data()).filter(v=>v.status!=="deleted").filter(v=>{
+  if(f||t){const d=(basis==="createdAt"||basis==="redeemedAt")?dOf(v[basis]):v[basis];if(!d||(f&&d<f)||(t&&d>t))return false}
+  const n=np(v.voucherNumber);if(!isNaN(nf)&&!(n>=nf))return false;if(!isNaN(nt)&&!(n<=nt))return false;
+  return !st||stat(v)===st});
+ rows.sort((x,y)=>(np(x.voucherNumber)-np(y.voucherNumber))||String(x.voucherNumber).localeCompare(String(y.voucherNumber)));repRows=rows;
+ const c={};rows.forEach(v=>{const k=stat(v);c[k]=(c[k]||0)+1});
+ $("rsum").innerHTML=`<div class="msg"><strong>${rows.length}</strong> voucher(s)${Object.keys(c).length?": "+Object.keys(c).map(k=>c[k]+" "+esc(k)).join(", "):""}${capped?". Only the first 5,000 were checked; narrow the filters.":""}</div>`;
+ $("rhead").innerHTML="<tr>"+repCols().map(x=>`<th>${x}</th>`).join("")+"</tr>";
+ $("rbody").innerHTML=rows.map(v=>"<tr>"+repCells(v).map((x,i)=>`<td>${i===4?`<span class="tag ${String(x).split(" ")[0]}">${esc(x)}</span>`:esc(x)}</td>`).join("")+"</tr>").join("")||`<tr><td colspan="${repCols().length}">No vouchers match these filters.</td></tr>`})}
+$("rrun").onclick=runReport;
+$("rcsv").onclick=()=>run(async()=>{need(repRows.length,"Run a report with at least one result first.");
+ const cell=x=>{x=String(x==null?"":x);if(/^[=+\-@]/.test(x))x="'"+x;return '"'+x.replace(/"/g,'""')+'"'};
+ const csv="\ufeff"+[repCols()].concat(repRows.map(repCells)).map(r=>r.map(cell).join(",")).join("\r\n");
+ const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));a.download="voucher-report-"+today()+".csv";document.body.appendChild(a);a.click();a.remove()});
+$("rprt").onclick=()=>{if(!repRows.length)return say("Run a report with at least one result first.",true);
+ $("print").innerHTML=`${brandBlock()}<h2>Voucher report</h2><p>Printed ${esc(new Date().toLocaleString())} by ${esc(me)}. ${repRows.length} voucher(s).</p><table><thead><tr>${repCols().map(x=>`<th>${x}</th>`).join("")}</tr></thead><tbody>${repRows.map(v=>"<tr>"+repCells(v).map(x=>`<td>${esc(x)}</td>`).join("")+"</tr>").join("")}</tbody></table>`;print()};
+// ---- redeem (everyone): type/select a number or scan a QR code. Looking up never redeems. ----
+function loadDl(){db.collection("vouchers").orderBy("seq","desc").limit(500).get().then(s=>{$("dl").innerHTML=s.docs.filter(d=>d.data().status==="active").map(d=>`<option value="${esc(d.id)}">`).join("")}).catch(()=>{})}
+function showV(v){const st=v.status==="deleted"?"not found":stat(v);
+ if(v.status==="deleted"){$("sres").innerHTML=`<div class="msg err">No voucher found.</div>`;return}
+ $("sres").innerHTML=`<h3>${esc(v.voucherNumber)}</h3><p>${catName(v.category)}${v.title?" – "+esc(v.title):""}<br>Valid ${esc(v.startDate)} to ${esc(v.endDate)}<br>Status: <span class="tag ${st.split(" ")[0]}">${esc(st)}</span></p>${st==="active"?'<button class="btn" id="rd">Redeem now</button>':""}`;
+ const b=$("rd");if(b)b.onclick=()=>{if(confirm("Redeem voucher "+v.voucherNumber+"? This cannot be undone."))run(async()=>{await db.runTransaction(async tx=>{const s=await tx.get(V(v.voucherNumber));need(s.exists&&stat(s.data())==="active","This voucher can no longer be redeemed.");
+  tx.update(V(v.voucherNumber),{status:"redeemed",redeemedAt:ts(),redeemedBy:me,modifiedAt:ts(),modifiedBy:me});audit(tx,{type:"voucher_redeemed",number:v.voucherNumber})});lookupNum(v.voucherNumber);loadDl()})}}
+function lookupNum(n){return run(async()=>{need(n,"Enter a voucher number.");const s=await V(n.trim()).get();need(s.exists,"No voucher found with that number.");showV(s.data())})}
+function lookupQr(code){return run(async()=>{const q=await db.collection("vouchers").where("qrId","==",code).limit(1).get();
+ if(!q.empty){$("rn").value=q.docs[0].id;return showV(q.docs[0].data())}
+ const s=await V(code).get();need(s.exists,"No voucher matches this QR code.");$("rn").value=s.id;showV(s.data())})}
+$("rl").onclick=()=>lookupNum($("rn").value);$("rn").onkeydown=e=>{if(e.key==="Enter")lookupNum($("rn").value)};
+let stream=null,scanning=false;const cv=document.createElement("canvas");
+function stopCam(){scanning=false;if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;$("cam").hidden=true}
+function tick(){if(!scanning)return;const v=$("vid");
+ if(v.readyState===v.HAVE_ENOUGH_DATA){cv.width=v.videoWidth;cv.height=v.videoHeight;const x=cv.getContext("2d");x.drawImage(v,0,0);const im=x.getImageData(0,0,cv.width,cv.height),c=jsQR(im.data,cv.width,cv.height);
+  if(c&&c.data){stopCam();const m=c.data.match(/[?&]q=([A-Za-z0-9_-]+)/);lookupQr(m?m[1]:c.data.trim());return}}
+ requestAnimationFrame(tick)}
+$("sc").onclick=()=>run(async()=>{need(window.jsQR&&navigator.mediaDevices,"Camera scanning is not available here. Camera access needs the page to be opened over https (see README). You can still type the voucher number.");
+ stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}});$("cam").hidden=false;$("vid").srcObject=stream;await $("vid").play();scanning=true;tick()});
+$("scs").onclick=stopCam;
+})();
+</script></body></html>
