@@ -220,7 +220,7 @@ $("ldl").onclick=()=>run(async()=>{need(isAdmin(),"Admins only.");
  need(rows.length,"No vouchers match.");
  rows=rows.slice().sort((x,y)=>(np(x.voucherNumber)-np(y.voucherNumber))||String(x.voucherNumber).localeCompare(String(y.voucherNumber)));
  const cell=x=>{x=String(x==null?"":x);if(/^[=+\-@]/.test(x))x="'"+x;return '"'+x.replace(/"/g,'""')+'"'};
- const csv="\ufeff"+[["Voucher number","QR link","Category","Start date","End date","Status"]].concat(rows.map(v=>[v.voucherNumber,qrUrl(v),catName(v.category),v.startDate,v.endDate,stat(v)])).map(r=>r.map(cell).join(",")).join("\r\n");
+ const csv="\ufeff"+[["Voucher number","QR link","Category","Start date","End date","Status","Recipient name","Contact number","Remarks"]].concat(rows.map(v=>[v.voucherNumber,qrUrl(v),catName(v.category),v.startDate,v.endDate,stat(v),v.recipientName||"",v.contactNumber||"",v.remarks||""])).map(r=>r.map(cell).join(",")).join("\r\n");
  saveBlob(new Blob([csv],{type:"text/csv"}),"qr-links-"+rows[0].voucherNumber+"-to-"+rows[rows.length-1].voucherNumber+".csv");
  await aud({type:"qr_links_exported",number:rows.length+" links"});say(rows.length+" QR link(s) downloaded as CSV.")});
 // ---- categories: everyone reads, admins add / rename / delete ----
