@@ -38,7 +38,7 @@ nav{display:flex;flex-wrap:wrap}video{width:100%;max-width:420px;border-radius:8
 <label style="display:flex;gap:8px;align-items:center;font-weight:500"><input type="checkbox" id="lk" checked style="width:auto"> Keep me signed in on this device</label><p><button class="btn" id="lb" style="width:100%">Enter</button></p></div></div>
 
 <div id="app"><div class="top"><div class="brand" id="tbrand"></div>
-<nav><button data-t="list" data-m="1" class="on">Vouchers</button><button data-t="gen" data-m="1">Generate</button><button data-t="cfg" data-m="1">Numbering</button><button data-t="cat" data-a="1">Categories</button><button data-t="usr" data-m="1">Users</button><button data-t="log" data-m="1">Audit log</button><button data-t="brd" data-a="1">Branding</button><button data-t="bak" data-a="1">Backup</button><button data-t="rep">Reports</button><button data-t="red">Redeem</button></nav>
+<nav><button data-t="list" data-m="1" class="on">Vouchers</button><button data-t="gen" data-m="1">Generate</button><button data-t="imp" data-m="1">Import</button><button data-t="cfg" data-m="1">Numbering</button><button data-t="cat" data-a="1">Categories</button><button data-t="usr" data-m="1">Users</button><button data-t="log" data-m="1">Audit log</button><button data-t="brd" data-a="1">Branding</button><button data-t="bak" data-a="1">Backup</button><button data-t="rep">Reports</button><button data-t="red">Redeem</button></nav>
 <span id="who" style="color:var(--soft);font-size:13px"></span><button class="btn g sm" id="cpin">Change PIN</button><button class="btn g sm" id="out">Sign out</button></div>
 <main><div id="msg"></div>
 
@@ -77,6 +77,14 @@ nav{display:flex;flex-wrap:wrap}video{width:100%;max-width:420px;border-radius:8
 <div><label>PIN (4+ digits)</label><input id="ap" type="password" inputmode="numeric" autocomplete="off"></div>
 <div><label>Role</label><select id="ar"><option value="user">End user (redeem only)</option><option value="supervisor">Supervisor</option><option value="admin">Admin</option></select></div></div>
 <p><button class="btn" id="ab">Add user</button></p></div>
+
+<div class="card" id="imp" hidden><h2>Import vouchers from CSV</h2>
+<div class="row"><div><label>What do you want to do?</label><select id="impm"><option value="update">Update existing vouchers (recipient details, titles, remarks…)</option><option value="create">Create new vouchers from the file</option></select></div>
+<div><label>CSV file</label><input id="impf" type="file" accept=".csv,text/csv"></div></div>
+<label id="impcw" style="display:flex;gap:8px;align-items:center;font-weight:500"><input type="checkbox" id="imc" style="width:auto"> Blank cells clear the existing value (otherwise blank cells are ignored)</label>
+<p style="color:var(--soft)">Dates: YYYY-MM-DD, or DD/MM/YYYY (day first). Up to 1,000 rows per import. In Excel, format phone number columns as Text so leading zeros and + signs are kept. Updating only needs a "Voucher number" column plus the columns you want to change; a file exported with Download QR links (CSV) works too.</p>
+<div class="bar"><button class="btn g sm" id="impt1">Download template: update</button><button class="btn g sm" id="impt2">Download template: create</button></div>
+<div id="impplan"></div><div class="bar"><button class="btn" id="impgo" disabled>Import</button><button class="btn g" id="imprej" hidden>Download rejected rows</button></div><div id="impres"></div></div>
 
 <div class="card" id="cat" hidden><h2>Categories</h2><p>These appear in the voucher category lists, filters and reports. Renaming a category updates every voucher that uses it. A category can only be deleted when no voucher uses it.</p>
 <table><thead><tr><th>Name</th><th>Code</th><th></th></tr></thead><tbody id="crows"></tbody></table>
@@ -169,8 +177,8 @@ $("out").onclick=()=>{ST.clear();location.href=location.pathname};
 $("cpin").onclick=()=>run(async()=>{const cur=prompt("Current PIN");if(cur===null)return;const s=await U(me).get();need(s.exists&&s.data().hash===await hp(me,cur),"Current PIN is wrong.");
  const nw=prompt("New PIN (4+ digits)");if(nw===null)return;need(nw.length>=4,"PIN must be at least 4 characters.");await U(me).update({hash:await hp(me,nw)});say("PIN changed.")});
 if(me&&role)U(me).get().then(s=>{if(!s.exists){ST.clear();location.reload()}else{role=s.data().role||"admin";enter()}}).catch(()=>enter());
-const tabs=["list","ed","gen","cfg","cat","usr","log","brd","bak","rep","red"];
-function show(t){stopCam();if((["cat","brd","bak"].includes(t)&&!isAdmin())||(["list","ed","gen","cfg","usr","log"].includes(t)&&!isMgr()))t="red";tabs.forEach(x=>$(x).hidden=x!==t);document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.t===t||(t==="ed"&&b.dataset.t==="list")));
+const tabs=["list","ed","gen","imp","cfg","cat","usr","log","brd","bak","rep","red"];
+function show(t){stopCam();if((["cat","brd","bak"].includes(t)&&!isAdmin())||(["list","ed","gen","imp","cfg","usr","log"].includes(t)&&!isMgr()))t="red";tabs.forEach(x=>$(x).hidden=x!==t);document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.t===t||(t==="ed"&&b.dataset.t==="list")));
  if(t==="list")search();if(t==="cfg")loadCfg();if(t==="log")loadLog();if(t==="usr")loadUsers();if(t==="cat")loadCatsTab();if(t==="brd")loadBrd();if(t==="red")loadDl()}
 document.querySelector("nav").onclick=e=>{if(e.target.dataset.t){say("");show(e.target.dataset.t)}};
 // ---- vouchers: list, edit, void, delete, print (admin) ----
@@ -244,6 +252,68 @@ $("crows").onclick=e=>{const d=e.target.dataset;
 $("cadd").onclick=()=>run(async()=>{need(isAdmin(),"Admins only.");const t=$("cnm").value.trim();need(t&&t.length<=60,"Enter a name (up to 60 characters).");await loadCats();need(!dupName(t,""),"A category with that name already exists.");
  const base=t.toUpperCase().replace(/[^A-Z0-9]+/g,"_").replace(/^_+|_+$/g,"").slice(0,36)||"CATEGORY";let id=base,i=2;while(cats[id])id=base+"_"+(i++);
  const order=Math.max.apply(null,[0].concat(Object.keys(cats).map(k=>cats[k].order||0)))+1;await db.collection("vcats").doc(id).set({name:t,order:order});await aud({type:"category_added",number:t});$("cnm").value="";loadCatsTab()});
+// ---- CSV import (admin + supervisor): create new vouchers, or update existing ones ----
+const HDR={number:["voucher number","voucher no","voucher","number","no"],category:["category","type","voucher type"],start:["start date","start","valid from"],end:["end date","end","valid to","expiry","expiry date"],title:["title or description","title","description"],recipient:["recipient name","recipient","name"],contact:["contact number","contact","phone","mobile"],remarks:["remarks","remark","notes","note"]};
+const FIELD={title:"title",recipient:"recipientName",contact:"contactNumber",remarks:"remarks"},MAXLEN={title:200,recipient:120,contact:40,remarks:500};
+let imp=null,impText="";
+function parseCsv(text){text=text.replace(/^\ufeff/,"");const first=text.split(/\r?\n/,1)[0];
+ const delim=[",",";","\t"].reduce((b,d)=>first.split(d).length>first.split(b).length?d:b,",");const rows=[];let row=[],f="",q=false;
+ for(let i=0;i<text.length;i++){const c=text[i];
+  if(q){if(c==='"'){if(text[i+1]==='"'){f+='"';i++}else q=false}else f+=c}
+  else if(c==='"')q=true;else if(c===delim){row.push(f);f=""}
+  else if(c==="\n"||c==="\r"){if(c==="\r"&&text[i+1]==="\n")i++;row.push(f);f="";rows.push(row);row=[]}else f+=c}
+ if(f!==""||row.length){row.push(f);rows.push(row)}return rows.filter(r=>r.some(x=>x.trim()!==""))}
+const unguard=x=>/^'[=+\-@]/.test(x)?x.slice(1):x;
+function normDate(x){x=x.trim();let y,m,d,t;
+ if(t=x.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/)){y=+t[1];m=+t[2];d=+t[3]}else if(t=x.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})$/)){d=+t[1];m=+t[2];y=+t[3]}else return null;
+ const dt=new Date(Date.UTC(y,m-1,d));if(dt.getUTCFullYear()!==y||dt.getUTCMonth()!==m-1||dt.getUTCDate()!==d)return null;return y+"-"+String(m).padStart(2,"0")+"-"+String(d).padStart(2,"0")}
+const catId=x=>{x=x.trim();if(!x)return null;const k=Object.keys(cats);return k.find(i=>i.toLowerCase()===x.toLowerCase())||k.find(i=>cats[i].name.toLowerCase()===x.toLowerCase())||null};
+const csvOut=rows=>"\ufeff"+rows.map(r=>r.map(x=>{x=String(x==null?"":x);if(/^[=+\-@]/.test(x))x="'"+x;return '"'+x.replace(/"/g,'""')+'"'}).join(",")).join("\r\n");
+function analyzeImport(){return run(async()=>{need(isMgr(),"Not allowed.");imp=null;$("impgo").disabled=true;$("imprej").hidden=true;$("impres").innerHTML="";$("impcw").hidden=$("impm").value!=="update";
+ if(!impText){$("impplan").innerHTML="";return}
+ const rows=parseCsv(impText);need(rows.length>=2,"The file has no data rows.");need(rows.length<=1001,"Import up to 1,000 rows at a time.");
+ const head=rows[0].map(x=>x.trim().toLowerCase()),col={};Object.keys(HDR).forEach(k=>{const i=head.findIndex(x=>HDR[k].includes(x));if(i>=0)col[k]=i});
+ need(col.number!==undefined,"The file needs a 'Voucher number' column.");
+ const mode=$("impm").value,clear=$("imc").checked,get=(r,k)=>col[k]===undefined?undefined:unguard((r[col[k]]||"").trim());
+ if(mode==="create")need(col.category!==undefined&&col.start!==undefined&&col.end!==undefined,"Creating vouchers needs 'Category', 'Start date' and 'End date' columns.");
+ else need(Object.keys(col).length>1,"Updating needs at least one column besides the voucher number.");
+ await loadCats();const ok=/^[A-Za-z0-9._-]{1,60}$/,body=rows.slice(1),uniq=Array.from(new Set(body.map(r=>get(r,"number")).filter(n=>n&&ok.test(n)))),exist={};
+ for(let i=0;i<uniq.length;i+=40){$("impplan").textContent="Checking vouchers… "+i+" of "+uniq.length;await Promise.all(uniq.slice(i,i+40).map(async n=>{const s=await V(n).get();exist[n]=s.exists?s.data():null}))}
+ const items=[],rej=[],seen=new Set();let same=0;
+ body.forEach((r,idx)=>{const line=idx+2,n=get(r,"number"),no=m=>{rej.push({line:line,number:n||"",reason:m,row:r})};
+  if(!n)return no("Missing voucher number");if(!ok.test(n))return no("Voucher number may only use letters, digits, dot, dash and underscore");if(seen.has(n))return no("Duplicate voucher number in this file");seen.add(n);
+  const d={};
+  for(const k of ["title","recipient","contact","remarks"]){const v=get(r,k);if(v===undefined)continue;if(v.length>MAXLEN[k])return no("Too long: "+k+" (max "+MAXLEN[k]+")");if(v!==""||clear||mode==="create")d[FIELD[k]]=v}
+  if(mode==="create"){if(exist[n])return no("Voucher number already exists");const c=catId(get(r,"category"));if(!c)return no("Unknown category '"+get(r,"category")+"'");
+   const s=normDate(get(r,"start")),e=normDate(get(r,"end"));if(!s||!e)return no("Start and end dates must be YYYY-MM-DD or DD/MM/YYYY");if(e<s)return no("End date is before the start date");
+   items.push({n:n,data:Object.assign({title:"",recipientName:"",contactNumber:"",remarks:""},d,{category:c,startDate:s,endDate:e})});return}
+  const ex=exist[n];if(!ex||ex.status==="deleted")return no("Voucher not found");
+  if(col.category!==undefined&&get(r,"category")){const c=catId(get(r,"category"));if(!c)return no("Unknown category '"+get(r,"category")+"'");d.category=c}
+  if(col.start!==undefined&&get(r,"start")){const s=normDate(get(r,"start"));if(!s)return no("Invalid start date");d.startDate=s}
+  if(col.end!==undefined&&get(r,"end")){const e=normDate(get(r,"end"));if(!e)return no("Invalid end date");d.endDate=e}
+  if((d.endDate||ex.endDate)<(d.startDate||ex.startDate))return no("End date is before the start date");
+  Object.keys(d).forEach(k=>{if(d[k]===(ex[k]==null?"":ex[k]))delete d[k]});
+  if(!Object.keys(d).length){same++;return}items.push({n:n,data:d})});
+ imp={mode:mode,items:items,rej:rej,head:rows[0]};
+ const nm=x=>mode==="create"?"will be created":"will be updated";
+ $("impplan").innerHTML=`<div class="msg"><strong>${items.length}</strong> row(s) ${nm()}${mode==="update"?`, ${same} already up to date`:""}, <strong>${rej.length}</strong> rejected.</div>`+
+  (items.length?`<table><thead><tr><th>Voucher</th><th>${mode==="create"?"Category":"Changes"}</th><th>${mode==="create"?"Valid":""}</th></tr></thead><tbody>${items.slice(0,10).map(it=>`<tr><td>${esc(it.n)}</td><td>${mode==="create"?esc(catName(it.data.category)):esc(Object.keys(it.data).join(", "))}</td><td>${mode==="create"?esc(it.data.startDate+" to "+it.data.endDate):""}</td></tr>`).join("")}</tbody></table>${items.length>10?`<p style="color:var(--soft)">…and ${items.length-10} more</p>`:""}`:"")+
+  (rej.length?`<h3 style="margin-top:16px">Rejected rows</h3><table><tbody>${rej.slice(0,100).map(x=>`<tr><td>Line ${x.line}</td><td>${esc(x.number)}</td><td>${esc(x.reason)}</td></tr>`).join("")}</tbody></table>${rej.length>100?`<p style="color:var(--soft)">…and ${rej.length-100} more (see the downloadable list)</p>`:""}`:"");
+ $("impgo").textContent="Import "+items.length+" voucher(s)";$("impgo").disabled=!items.length;$("imprej").hidden=!rej.length})}
+$("impf").onchange=async()=>{const f=$("impf").files[0];impText=f?await f.text():"";analyzeImport()};$("impm").onchange=analyzeImport;$("imc").onchange=analyzeImport;
+$("imprej").onclick=()=>{if(!imp||!imp.rej.length)return;saveBlob(new Blob([csvOut([imp.head.concat(["Reason"])].concat(imp.rej.map(x=>x.row.concat([x.reason]))))],{type:"text/csv"}),"import-rejected-rows.csv")};
+$("impt1").onclick=()=>saveBlob(new Blob([csvOut([["Voucher number","Title or description","Recipient name","Contact number","Remarks"],["6126","Welcome gift","Sample Person","+97400000000",""]])],{type:"text/csv"}),"template-update-vouchers.csv");
+$("impt2").onclick=()=>saveBlob(new Blob([csvOut([["Voucher number","Category","Start date","End date","Title or description","Recipient name","Contact number","Remarks"],["6126",(cats[Object.keys(cats)[0]]||{name:"Paid Voucher"}).name,"2026-11-01","2026-12-31","Welcome gift","Sample Person","+97400000000",""]])],{type:"text/csv"}),"template-create-vouchers.csv");
+$("impgo").onclick=()=>run(async()=>{need(isMgr()&&imp&&imp.items.length,"Choose a file first.");const mode=imp.mode,items=imp.items,verb=mode==="create"?"Create":"Update";
+ if(!confirm(verb+" "+items.length+" voucher(s) from this file?"))return;$("impgo").disabled=true;let done=0;const bad=[];
+ const one=it=>mode==="create"?V(it.n).set(mk(it.n,null,it.data)):V(it.n).update(Object.assign({},it.data,{modifiedAt:ts(),modifiedBy:me}));
+ for(let i=0;i<items.length;i+=400){const part=items.slice(i,i+400),b=db.batch();
+  part.forEach(it=>{mode==="create"?b.set(V(it.n),mk(it.n,null,it.data)):b.update(V(it.n),Object.assign({},it.data,{modifiedAt:ts(),modifiedBy:me}))});
+  try{await b.commit();done+=part.length}catch(e){for(const it of part){try{await one(it);done++}catch(e2){bad.push(it.n)}}}
+  $("impres").textContent="Importing… "+(done+bad.length)+" of "+items.length}
+ await aud({type:mode==="create"?"vouchers_imported":"vouchers_bulk_updated",number:done+" saved"+(bad.length?", "+bad.length+" failed":"")});
+ $("impres").innerHTML=`<div class="msg ${bad.length?"err":""}">${done} voucher(s) ${mode==="create"?"created":"updated"}${bad.length?". These could not be saved: "+esc(bad.slice(0,20).join(", "))+(bad.length>20?"…":"")+". Choose the file again to retry; vouchers already saved are skipped.":"."}</div>`;
+ imp=null;impText="";$("impf").value="";$("impplan").innerHTML="";$("imprej").hidden=true});
 // ---- generate ----
 async function getCfg(){const s=await CFG().get();need(s.exists,"Numbering is not set up yet. Open Numbering first.");return s.data()}
 async function pick(c,qty){const seqs=[];let n=c.nextNumber; // skips numbers already used (e.g. entered manually or deleted)
