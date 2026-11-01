@@ -38,7 +38,7 @@ nav{display:flex;flex-wrap:wrap}video{width:100%;max-width:420px;border-radius:8
 <label style="display:flex;gap:8px;align-items:center;font-weight:500"><input type="checkbox" id="lk" checked style="width:auto"> Keep me signed in on this device</label><p><button class="btn" id="lb" style="width:100%">Enter</button></p></div></div>
 
 <div id="app"><div class="top"><div class="brand" id="tbrand"></div>
-<nav><button data-t="list" data-a="1" class="on">Vouchers</button><button data-t="gen" data-a="1">Generate</button><button data-t="cfg" data-a="1">Numbering</button><button data-t="cat" data-a="1">Categories</button><button data-t="usr" data-a="1">Users</button><button data-t="log" data-a="1">Audit log</button><button data-t="brd" data-a="1">Branding</button><button data-t="bak" data-a="1">Backup</button><button data-t="rep">Reports</button><button data-t="red">Redeem</button></nav>
+<nav><button data-t="list" data-m="1" class="on">Vouchers</button><button data-t="gen" data-m="1">Generate</button><button data-t="cfg" data-m="1">Numbering</button><button data-t="cat" data-a="1">Categories</button><button data-t="usr" data-m="1">Users</button><button data-t="log" data-m="1">Audit log</button><button data-t="brd" data-a="1">Branding</button><button data-t="bak" data-a="1">Backup</button><button data-t="rep">Reports</button><button data-t="red">Redeem</button></nav>
 <span id="who" style="color:var(--soft);font-size:13px"></span><button class="btn g sm" id="cpin">Change PIN</button><button class="btn g sm" id="out">Sign out</button></div>
 <main><div id="msg"></div>
 
@@ -75,7 +75,7 @@ nav{display:flex;flex-wrap:wrap}video{width:100%;max-width:420px;border-radius:8
 <table><thead><tr><th>Name</th><th>Role</th><th></th></tr></thead><tbody id="urows"></tbody></table>
 <h3 style="margin-top:24px">Add a user</h3><div class="row"><div><label>Name</label><input id="an" autocomplete="off"></div>
 <div><label>PIN (4+ digits)</label><input id="ap" type="password" inputmode="numeric" autocomplete="off"></div>
-<div><label>Role</label><select id="ar"><option value="user">End user (redeem only)</option><option value="admin">Admin</option></select></div></div>
+<div><label>Role</label><select id="ar"><option value="user">End user (redeem only)</option><option value="supervisor">Supervisor</option><option value="admin">Admin</option></select></div></div>
 <p><button class="btn" id="ab">Add user</button></p></div>
 
 <div class="card" id="cat" hidden><h2>Categories</h2><p>These appear in the voucher category lists, filters and reports. Renaming a category updates every voucher that uses it. A category can only be deleted when no voucher uses it.</p>
@@ -153,11 +153,12 @@ const ST={get:k=>{try{return localStorage.getItem(k)||sessionStorage.getItem(k)}
  clear:()=>{try{["vu","vr","vt"].forEach(k=>localStorage.removeItem(k));sessionStorage.clear()}catch(e){}}};
 if(ST.get("vt")&&Date.now()-(+ST.get("vt"))>30*864e5)ST.clear(); // keep-signed-in lasts 30 days
 let me=ST.get("vu"),role=ST.get("vr"),cache=[],pending=null,users=[],editId=null;
-const isAdmin=()=>role==="admin";
+const isAdmin=()=>role==="admin",isMgr=()=>role==="admin"||role==="supervisor",roleLabel=r=>r==="admin"?"Admin":r==="supervisor"?"Supervisor":"End user";
 // ---- sign in ----
-function enter(){$("login").hidden=true;$("app").style.display="block";$("who").textContent=me+" ("+(isAdmin()?"Admin":"End user")+")";
- document.querySelectorAll("nav [data-a]").forEach(b=>b.hidden=!isAdmin());
- loadCats().catch(()=>{Object.keys(DEF_CATS).forEach((id,i)=>cats[id]={name:DEF_CATS[id],order:i+1});fillCats()}).then(()=>{const q=new URLSearchParams(location.search).get("q");show("red");if(q)lookupQr(q);else if(isAdmin())show("list")})}
+function enter(){$("login").hidden=true;$("app").style.display="block";$("who").textContent=me+" ("+roleLabel(role)+")";
+ document.querySelectorAll("nav [data-a],nav [data-m]").forEach(b=>{b.hidden=!(b.hasAttribute("data-a")?isAdmin():isMgr())});
+ if(!isAdmin()){const o=$("ar").querySelector('option[value="admin"]');if(o)o.remove()}
+ loadCats().catch(()=>{Object.keys(DEF_CATS).forEach((id,i)=>cats[id]={name:DEF_CATS[id],order:i+1});fillCats()}).then(()=>{const q=new URLSearchParams(location.search).get("q");show("red");if(q)lookupQr(q);else if(isMgr())show("list")})}
 $("lb").onclick=async()=>{const n=$("ln").value.trim(),p=$("lp").value,m=$("lmsg");m.innerHTML="";
  try{need(n&&p.length>=4,"Enter your name and a PIN of at least 4 digits.");const ref=U(n),h=await hp(n,p),s=await ref.get();let r="admin";
   if(s.exists){need(s.data().hash===h,"Wrong PIN.");r=s.data().role||"admin"}
@@ -169,7 +170,7 @@ $("cpin").onclick=()=>run(async()=>{const cur=prompt("Current PIN");if(cur===nul
  const nw=prompt("New PIN (4+ digits)");if(nw===null)return;need(nw.length>=4,"PIN must be at least 4 characters.");await U(me).update({hash:await hp(me,nw)});say("PIN changed.")});
 if(me&&role)U(me).get().then(s=>{if(!s.exists){ST.clear();location.reload()}else{role=s.data().role||"admin";enter()}}).catch(()=>enter());
 const tabs=["list","ed","gen","cfg","cat","usr","log","brd","bak","rep","red"];
-function show(t){stopCam();if(t!=="red"&&t!=="rep"&&!isAdmin())t="red";tabs.forEach(x=>$(x).hidden=x!==t);document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.t===t||(t==="ed"&&b.dataset.t==="list")));
+function show(t){stopCam();if((["cat","brd","bak"].includes(t)&&!isAdmin())||(["list","ed","gen","cfg","usr","log"].includes(t)&&!isMgr()))t="red";tabs.forEach(x=>$(x).hidden=x!==t);document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.t===t||(t==="ed"&&b.dataset.t==="list")));
  if(t==="list")search();if(t==="cfg")loadCfg();if(t==="log")loadLog();if(t==="usr")loadUsers();if(t==="cat")loadCatsTab();if(t==="brd")loadBrd();if(t==="red")loadDl()}
 document.querySelector("nav").onclick=e=>{if(e.target.dataset.t){say("");show(e.target.dataset.t)}};
 // ---- vouchers: list, edit, void, delete, print (admin) ----
@@ -201,7 +202,7 @@ function qrPng(q,mm){return new Promise(ok=>{const n=q.getModuleCount(),tot=n+8,
  x.fillStyle="#fff";x.fillRect(0,0,c.width,c.height);x.fillStyle="#000";for(let r=0;r<n;r++)for(let k=0;k<n;k++)if(q.isDark(r,k))x.fillRect((k+4)*s,(r+4)*s,s,s);c.toBlob(ok,"image/png")})}
 function saveBlob(b,name){const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000)}
 $("sel").onchange=()=>document.querySelectorAll("#rows input[type=checkbox]").forEach(c=>c.checked=$("sel").checked);
-$("qdl").onclick=()=>run(async()=>{need(isAdmin(),"Admins only.");const sel=Array.from(document.querySelectorAll("#rows input:checked")).map(c=>cache[c.dataset.i]);
+$("qdl").onclick=()=>run(async()=>{need(isMgr(),"Not allowed.");const sel=Array.from(document.querySelectorAll("#rows input:checked")).map(c=>cache[c.dataset.i]);
  need(sel.length,"Select at least one voucher first (use the box at the top of the list to select all).");
  const mm=+$("qs").value;need(mm>=10&&mm<=200,"Choose a size from 10 to 200 mm.");const f=$("qf").value;need(f!=="pdf"||window.jspdf,"The PDF tool did not load. Check your internet connection and reload.");
  const one=async v=>{const q=qrObj(v);return f==="pdf"?qrPdf(q,mm):f==="svg"?qrSvg(q,mm):await qrPng(q,mm)};
@@ -211,7 +212,7 @@ $("qdl").onclick=()=>run(async()=>{need(isAdmin(),"Admins only.");const sel=Arra
   saveBlob(await z.generateAsync({type:"blob"}),"qr-codes-"+sel[0].voucherNumber+"-to-"+sel[sel.length-1].voucherNumber+".zip")}
  await aud({type:"qr_exported",number:sel.length+" × "+f.toUpperCase()});say(sel.length+" QR code(s) downloaded"+(sel.length>1?" in one ZIP file with one "+f.toUpperCase()+" per voucher, named by voucher number.":"."))});
 // ---- QR link list as CSV (admin): the ticked vouchers, or a voucher number range ----
-$("ldl").onclick=()=>run(async()=>{need(isAdmin(),"Admins only.");
+$("ldl").onclick=()=>run(async()=>{need(isMgr(),"Not allowed.");
  let rows=Array.from(document.querySelectorAll("#rows input:checked")).map(c=>cache[c.dataset.i]);
  if(!rows.length){const a=$("lf").value.trim(),b=$("lt").value.trim(),nf=np(a),nt=np(b);
   need((!a||!isNaN(nf))&&(!b||!isNaN(nt)),"Voucher numbers must contain digits.");need(isNaN(nf)||isNaN(nt)||nf<=nt,"The first number must not be higher than the last.");
@@ -281,20 +282,23 @@ $("cb").onclick=()=>run(async()=>{const c={startNumber:+$("cs").value,digits:+$(
  await db.runTransaction(async tx=>{const old=await tx.get(CFG());need(!(await tx.get(V(fmt(c,c.startNumber)))).exists,fmt(c,c.startNumber)+" is already used. Choose a higher starting number.");
   tx.set(CFG(),Object.assign({},c,{updatedBy:me,updatedAt:ts()}));audit(tx,{type:"config_changed",before:old.exists?old.data():null,after:c})});
  say("Saved. Next voucher number: "+fmt(c,c.startNumber));loadCfg()});
-// ---- users (admin): add, change role, reset PIN, delete ----
-function loadUsers(){return run(async()=>{users=(await db.collection("vusers").get()).docs.map(d=>Object.assign({id:d.id},d.data(),{role:d.data().role||"admin"}));
- $("urows").innerHTML=users.map(u=>`<tr><td>${esc(u.name)}${u.name===me?" (you)":""}</td><td><select data-role="${esc(u.id)}" ${u.name===me?"disabled":""} aria-label="Role for ${esc(u.name)}"><option value="user" ${u.role==="user"?"selected":""}>End user</option><option value="admin" ${u.role==="admin"?"selected":""}>Admin</option></select></td><td style="white-space:nowrap"><button class="btn g sm" data-pin="${esc(u.id)}">Reset PIN</button> ${u.name===me?"":`<button class="btn dng sm" data-udel="${esc(u.id)}">Delete</button>`}</td></tr>`).join("")})}
+// ---- users: admins manage everyone; supervisors manage supervisors and end users only (admins are hidden from them) ----
+const ROLES={user:"End user",supervisor:"Supervisor",admin:"Admin"};
+const roleOpts=sel=>Object.keys(ROLES).filter(r=>isAdmin()||r!=="admin").map(r=>`<option value="${r}" ${sel===r?"selected":""}>${ROLES[r]}</option>`).join("");
+function loadUsers(){return run(async()=>{need(isMgr(),"Not allowed.");users=(await db.collection("vusers").get()).docs.map(d=>Object.assign({id:d.id},d.data(),{role:d.data().role||"admin"}));
+ $("urows").innerHTML=users.filter(u=>isAdmin()||u.role!=="admin").map(u=>`<tr><td>${esc(u.name)}${u.name===me?" (you)":""}</td><td><select data-role="${esc(u.id)}" ${u.name===me?"disabled":""} aria-label="Role for ${esc(u.name)}">${roleOpts(u.role)}</select></td><td style="white-space:nowrap"><button class="btn g sm" data-pin="${esc(u.id)}">Reset PIN</button> ${u.name===me?"":`<button class="btn dng sm" data-udel="${esc(u.id)}">Delete</button>`}</td></tr>`).join("")})}
 const admins=()=>users.filter(u=>u.role==="admin").length;
-$("urows").onchange=e=>{const id=e.target.dataset.role;if(!id)return;const u=users.find(x=>x.id===id);run(async()=>{
- if(e.target.value==="user")need(admins()>1,"There must be at least one admin.");await U(u.name).update({role:e.target.value});await aud({type:"user_role_changed",number:u.name+" → "+e.target.value});loadUsers()}).then(loadUsers)};
+const allowed=(u,newRole)=>isMgr()&&(isAdmin()||(u.role!=="admin"&&newRole!=="admin"));
+$("urows").onchange=e=>{const id=e.target.dataset.role;if(!id)return;const u=users.find(x=>x.id===id);run(async()=>{need(allowed(u,e.target.value),"Not allowed.");
+ if(u.role==="admin"&&e.target.value!=="admin")need(admins()>1,"There must be at least one admin.");await U(u.name).update({role:e.target.value});await aud({type:"user_role_changed",number:u.name+" → "+e.target.value});loadUsers()}).then(loadUsers)};
 $("urows").onclick=e=>{const d=e.target.dataset;
- if(d.pin){const u=users.find(x=>x.id===d.pin),p=prompt("New PIN for "+u.name+" (4+ digits)");if(p!==null)run(async()=>{need(p.length>=4,"PIN must be at least 4 characters.");await U(u.name).update({hash:await hp(u.name,p)});await aud({type:"user_pin_reset",number:u.name});say("PIN reset for "+u.name+".")})}
- if(d.udel){const u=users.find(x=>x.id===d.udel);if(confirm("Delete user "+u.name+"? They will no longer be able to sign in."))run(async()=>{need(u.role!=="admin"||admins()>1,"There must be at least one admin.");await U(u.name).delete();await aud({type:"user_deleted",number:u.name});loadUsers()})}};
-$("ab").onclick=()=>run(async()=>{const n=$("an").value.trim(),p=$("ap").value,r=$("ar").value;need(n&&p.length>=4,"Enter a name and a PIN of at least 4 digits.");
+ if(d.pin){const u=users.find(x=>x.id===d.pin),p=prompt("New PIN for "+u.name+" (4+ digits)");if(p!==null)run(async()=>{need(allowed(u,u.role),"Not allowed.");need(p.length>=4,"PIN must be at least 4 characters.");await U(u.name).update({hash:await hp(u.name,p)});await aud({type:"user_pin_reset",number:u.name});say("PIN reset for "+u.name+".")})}
+ if(d.udel){const u=users.find(x=>x.id===d.udel);if(confirm("Delete user "+u.name+"? They will no longer be able to sign in."))run(async()=>{need(allowed(u,u.role),"Not allowed.");need(u.role!=="admin"||admins()>1,"There must be at least one admin.");await U(u.name).delete();await aud({type:"user_deleted",number:u.name});loadUsers()})}};
+$("ab").onclick=()=>run(async()=>{const n=$("an").value.trim(),p=$("ap").value,r=$("ar").value;need(isMgr()&&(isAdmin()||r!=="admin"),"Not allowed.");need(n&&p.length>=4,"Enter a name and a PIN of at least 4 digits.");
  need(!(await U(n).get()).exists,"That name already has an account.");await U(n).set({name:n,hash:await hp(n,p),role:r,created:ts()});await aud({type:"user_added",number:n+" ("+r+")"});
- $("an").value=$("ap").value="";say(n+" can now sign in as "+(r==="admin"?"an admin":"an end user")+".");loadUsers()});
+ $("an").value=$("ap").value="";say(n+" can now sign in as "+(r==="admin"?"an admin":r==="supervisor"?"a supervisor":"an end user")+".");loadUsers()});
 function loadLog(){return run(async()=>{const s=await db.collection("vaudit").orderBy("at","desc").limit(50).get();
- $("logrows").innerHTML=s.docs.map(d=>{const l=d.data();return `<tr><td>${esc(l.at&&l.at.toDate?l.at.toDate().toLocaleString():"")}</td><td>${esc(l.type.replace(/_/g," "))}</td><td>${esc(l.actor)}</td><td>${esc(l.first?l.first+" to "+l.last:l.number||"")}</td></tr>`}).join("")||"<tr><td>No activity yet.</td></tr>"})}
+ $("logrows").innerHTML=s.docs.filter(d=>isAdmin()||!/^(backup_|branding_|category_)/.test(d.data().type)).map(d=>{const l=d.data();return `<tr><td>${esc(l.at&&l.at.toDate?l.at.toDate().toLocaleString():"")}</td><td>${esc(l.type.replace(/_/g," "))}</td><td>${esc(l.actor)}</td><td>${esc(l.first?l.first+" to "+l.last:l.number||"")}</td></tr>`}).join("")||"<tr><td>No activity yet.</td></tr>"})}
 // ---- branding: company name and logo (admin edits; everyone sees it) ----
 let brand={name:"",logo:"",},newLogo=null;
 const okLogo=s=>typeof s==="string"&&s.length<=300000&&/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+\/=]+$/.test(s);
@@ -320,7 +324,7 @@ const ser=x=>{if(x&&typeof x.toMillis==="function")return{__ts:x.toMillis()};if(
 const de=x=>{if(x&&typeof x==="object"){if(Array.isArray(x))return x.map(de);if(Object.keys(x).length===1&&typeof x.__ts==="number")return firebase.firestore.Timestamp.fromMillis(x.__ts);const o={};for(const k in x)o[k]=de(x[k]);return o}return x};
 const okDoc={
  vouchers:(id,d)=>/^[A-Za-z0-9._-]{1,60}$/.test(id)&&d.voucherNumber===id&&/^[A-Za-z0-9_-]{1,40}$/.test(d.category||"")&&typeof d.startDate==="string"&&typeof d.endDate==="string"&&d.endDate>=d.startDate&&["active","redeemed","voided","deleted"].includes(d.status)&&typeof d.qrId==="string"&&d.qrId.length>=20,
- vusers:(id,d)=>typeof d.name==="string"&&typeof d.hash==="string"&&["admin","user"].includes(d.role||"admin"),
+ vusers:(id,d)=>typeof d.name==="string"&&typeof d.hash==="string"&&["admin","supervisor","user"].includes(d.role||"admin"),
  vcats:(id,d)=>/^[A-Za-z0-9_-]{1,40}$/.test(id)&&typeof d.name==="string"&&d.name.length>=1&&d.name.length<=60,
  vbrand:(id,d)=>id==="main"&&typeof d.name==="string"&&typeof d.logo==="string"&&d.logo.length<=300000,
  vaudit:(id,d)=>typeof d.type==="string"&&!!d.at&&typeof d.at.__ts==="number"};
@@ -361,8 +365,8 @@ $("bkgo").onclick=()=>run(async()=>{need(isAdmin()&&plan,"Choose a backup file f
 let repRows=[];
 const dOf=t=>t&&t.toDate?t.toDate().toLocaleDateString("en-CA"):"";
 const np=s=>{const m=String(s||"").match(/\d+/);return m?parseInt(m[0],10):NaN};
-const repCols=()=>["Voucher number","Category","Start date","End date","Status","Date created","Redeemed at","Redeemed by"].concat(isAdmin()?["Recipient","Contact"]:[]);
-const repCells=v=>[v.voucherNumber,catName(v.category),v.startDate,v.endDate,stat(v),dOf(v.createdAt),v.redeemedAt&&v.redeemedAt.toDate?v.redeemedAt.toDate().toLocaleString():"",v.redeemedBy||""].concat(isAdmin()?[v.recipientName||"",v.contactNumber||""]:[]);
+const repCols=()=>["Voucher number","Category","Start date","End date","Status","Date created","Redeemed at","Redeemed by"].concat(isMgr()?["Recipient","Contact"]:[]);
+const repCells=v=>[v.voucherNumber,catName(v.category),v.startDate,v.endDate,stat(v),dOf(v.createdAt),v.redeemedAt&&v.redeemedAt.toDate?v.redeemedAt.toDate().toLocaleString():"",v.redeemedBy||""].concat(isMgr()?[v.recipientName||"",v.contactNumber||""]:[]);
 function runReport(){return run(async()=>{
  const f=$("rf").value,t=$("rt").value,basis=$("rb").value,cat=$("rc").value,st=$("rs").value,a=$("rnf").value.trim(),b=$("rnt").value.trim(),nf=np(a),nt=np(b);
  need(!f||!t||f<=t,"The from date must be on or before the to date.");
