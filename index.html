@@ -29,7 +29,7 @@ table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:8px;bord
 @media print{body>*:not(#print){display:none!important}#print{display:block}}
 
 nav{display:flex;flex-wrap:wrap}video{width:100%;max-width:420px;border-radius:8px;background:#000}
-.btn.sm{padding:5px 10px;font-size:13px}.btn.dng{background:none;color:var(--brick);border:1px solid rgba(174,69,48,.4)}
+.btn.sm{padding:5px 10px;font-size:13px}.ck{display:flex;gap:8px;align-items:flex-start;font-weight:500;color:var(--ink);font-size:15px;margin:8px 0}.ck input{width:auto;margin-top:3px}.btn.dng{background:none;color:var(--brick);border:1px solid rgba(174,69,48,.4)}
 </style></head><body>
 
 <div id="login"><div class="card"><div class="brand" id="lbrand"></div>
@@ -38,7 +38,7 @@ nav{display:flex;flex-wrap:wrap}video{width:100%;max-width:420px;border-radius:8
 <label style="display:flex;gap:8px;align-items:center;font-weight:500"><input type="checkbox" id="lk" checked style="width:auto"> Keep me signed in on this device</label><p><button class="btn" id="lb" style="width:100%">Enter</button></p></div></div>
 
 <div id="app"><div class="top"><div class="brand" id="tbrand"></div>
-<nav><button data-t="list" data-m="1" class="on">Vouchers</button><button data-t="gen" data-m="1">Generate</button><button data-t="imp" data-m="1">Import / Export</button><button data-t="cfg" data-m="1">Numbering</button><button data-t="cat" data-a="1">Categories</button><button data-t="usr" data-m="1">Users</button><button data-t="log" data-m="1">Audit log</button><button data-t="brd" data-a="1">Branding</button><button data-t="bak" data-a="1">Backup</button><button data-t="rep">Reports</button><button data-t="red">Redeem</button></nav>
+<nav><button data-t="list" data-m="1" class="on">Vouchers</button><button data-t="gen" data-m="1">Generate</button><button data-t="imp" data-m="1">Import / Export</button><button data-t="cfg" data-m="1">Numbering</button><button data-t="cat" data-a="1">Categories</button><button data-t="usr" data-m="1">Users</button><button data-t="log" data-m="1">Audit log</button><button data-t="brd" data-a="1">Branding</button><button data-t="bak" data-a="1">Backup</button><button data-t="rst" data-a="1">Reset data</button><button data-t="rep">Reports</button><button data-t="red">Redeem</button></nav>
 <span id="who" style="color:var(--soft);font-size:13px"></span><button class="btn g sm" id="cpin">Change PIN</button><button class="btn g sm" id="out">Sign out</button></div>
 <main><div id="msg"></div>
 
@@ -112,6 +112,19 @@ nav{display:flex;flex-wrap:wrap}video{width:100%;max-width:420px;border-radius:8
 
 <div class="card" id="log" hidden><h2>Audit log</h2><table><tbody id="logrows"></tbody></table></div>
 
+<div class="card" id="rst" hidden><h2>Reset data</h2>
+<div class="msg err"><strong>Resetting permanently deletes data.</strong> It can only be undone by restoring a backup file. Tick only what you really want to clear.</div>
+<label class="ck"><input type="checkbox" data-rs="v"> Voucher records: every voucher, including who redeemed it and when</label>
+<label class="ck"><input type="checkbox" data-rs="n"> Number counter: the next generated number goes back to the starting number</label>
+<label class="ck"><input type="checkbox" data-rs="a"> Audit log</label>
+<label class="ck"><input type="checkbox" data-rs="u"> Users: everyone except you</label>
+<label class="ck"><input type="checkbox" data-rs="c"> Categories: back to Paid Voucher and Complimentary Voucher</label>
+<label class="ck"><input type="checkbox" data-rs="b"> Branding: company name and logo</label>
+<div class="bar"><button class="btn g" id="rsrev">Review</button></div><div id="rsplan"></div>
+<div id="rsconf" hidden><label class="ck"><input type="checkbox" id="rsbk" checked> Download a backup file first (recommended)</label>
+<div class="row"><div><label>Type RESET to confirm</label><input id="rstxt" autocomplete="off"></div><div><label>Your PIN</label><input id="rspin" type="password" inputmode="numeric" autocomplete="off"></div></div>
+<div class="bar"><button class="btn dng" id="rsgo">Reset selected data</button></div></div><div id="rsres"></div></div>
+
 <div class="card" id="rep" hidden><h2>Voucher report</h2>
 <div class="row"><div><label>Date based on</label><select id="rb"><option value="createdAt">Date created</option><option value="startDate">Start date</option><option value="endDate">End date</option><option value="redeemedAt">Date redeemed</option></select></div>
 <div><label>From date</label><input id="rf" type="date"></div><div><label>To date</label><input id="rt" type="date"></div></div>
@@ -183,8 +196,8 @@ $("out").onclick=()=>{ST.clear();location.href=location.pathname};
 $("cpin").onclick=()=>run(async()=>{const cur=prompt("Current PIN");if(cur===null)return;const s=await U(me).get();need(s.exists&&s.data().hash===await hp(me,cur),"Current PIN is wrong.");
  const nw=prompt("New PIN (4+ digits)");if(nw===null)return;need(nw.length>=4,"PIN must be at least 4 characters.");await U(me).update({hash:await hp(me,nw)});say("PIN changed.")});
 if(me&&role)U(me).get().then(s=>{if(!s.exists){ST.clear();location.reload()}else{role=s.data().role||"admin";enter()}}).catch(()=>enter());
-const tabs=["list","ed","gen","imp","cfg","cat","usr","log","brd","bak","rep","red"];
-function show(t){stopCam();if((["cat","brd","bak"].includes(t)&&!isAdmin())||(["list","ed","gen","imp","cfg","usr","log"].includes(t)&&!isMgr()))t="red";tabs.forEach(x=>$(x).hidden=x!==t);document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.t===t||(t==="ed"&&b.dataset.t==="list")));
+const tabs=["list","ed","gen","imp","cfg","cat","usr","log","brd","bak","rst","rep","red"];
+function show(t){stopCam();if((["cat","brd","bak","rst"].includes(t)&&!isAdmin())||(["list","ed","gen","imp","cfg","usr","log"].includes(t)&&!isMgr()))t="red";tabs.forEach(x=>$(x).hidden=x!==t);document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.t===t||(t==="ed"&&b.dataset.t==="list")));
  if(t==="list")search();if(t==="cfg")loadCfg();if(t==="log")loadLog();if(t==="usr")loadUsers();if(t==="cat")loadCatsTab();if(t==="brd")loadBrd();if(t==="red")loadDl()}
 document.querySelector("nav").onclick=e=>{if(e.target.dataset.t){say("");show(e.target.dataset.t)}};
 // ---- vouchers: list, edit, void, delete, print (admin) ----
@@ -414,12 +427,12 @@ const okDoc={
  vbrand:(id,d)=>id==="main"&&typeof d.name==="string"&&typeof d.logo==="string"&&d.logo.length<=300000,
  vaudit:(id,d)=>typeof d.type==="string"&&!!d.at&&typeof d.at.__ts==="number"};
 let plan=null;
-$("bkb").onclick=()=>run(async()=>{need(isAdmin(),"Admins only.");$("bkprog").textContent="Preparing backup…";
- const out={app:"voucher-ledger",version:1,createdAt:new Date().toISOString(),createdBy:me,collections:{}},n={};
+async function doBackup(){const out={app:"voucher-ledger",version:1,createdAt:new Date().toISOString(),createdBy:me,collections:{}},n={};
  for(const c of COLS){const s=await db.collection(c[0]).get();out.collections[c[0]]={};s.docs.forEach(d=>{out.collections[c[0]][d.id]=ser(d.data())});n[c[0]]=s.size}
  const a=document.createElement("a"),d=new Date(),p=x=>String(x).padStart(2,"0");
  a.href=URL.createObjectURL(new Blob([JSON.stringify(out)],{type:"application/json"}));a.download="voucher-backup-"+today()+"-"+p(d.getHours())+p(d.getMinutes())+".json";document.body.appendChild(a);a.click();a.remove();
- await aud({type:"backup_created",number:n.vouchers+" vouchers, "+n.vusers+" users"});$("bkprog").innerHTML=`<div class="msg">Backup downloaded: ${n.vouchers} vouchers, ${n.vusers} users, ${n.vaudit} audit entries.</div>`});
+ await aud({type:"backup_created",number:n.vouchers+" vouchers, "+n.vusers+" users"});return n}
+$("bkb").onclick=()=>run(async()=>{need(isAdmin(),"Admins only.");$("bkprog").textContent="Preparing backup…";const n=await doBackup();$("bkprog").innerHTML=`<div class="msg">Backup downloaded: ${n.vouchers} vouchers, ${n.vusers} users, ${n.vaudit} audit entries.</div>`});
 $("bkf").onchange=()=>run(async()=>{plan=null;$("bkgo").disabled=true;$("bkplan").innerHTML="";$("bkprog").textContent="";const f=$("bkf").files[0];if(!f)return;
  need(isAdmin(),"Admins only.");let data;try{data=JSON.parse(await f.text())}catch(e){throw new Error("That file is not a valid backup.")}
  need(data&&data.app==="voucher-ledger"&&data.version===1&&data.collections,"That file is not a Voucher Ledger backup.");
@@ -446,6 +459,38 @@ $("bkgo").onclick=()=>run(async()=>{need(isAdmin()&&plan,"Choose a backup file f
  try{if(act==="create"){await CFG().set(de(n));added++}else if(act==="advance"){await CFG().update({nextNumber:n.nextNumber});added++}}catch(e){failed++}
  await aud({type:"backup_restored",number:added+" added, "+failed+" failed"});plan=null;$("bkf").value="";$("bkplan").innerHTML="";
  prog.innerHTML=`<div class="msg ${failed?"err":""}">Restore finished: ${added} record(s) added${failed?", "+failed+" could not be saved. Choose the file again and re-run; records already restored are skipped.":"."}</div>`});
+// ---- reset data (admin) ----
+const rsSel=()=>Array.from(document.querySelectorAll("[data-rs]:checked")).map(c=>c.dataset.rs);
+const idsOf=async col=>(await db.collection(col).get()).docs.map(d=>d.id);
+async function delIds(col,ids,prog){let i=0,done=0;const chunks=[];for(let k=0;k<ids.length;k+=20)chunks.push(ids.slice(k,k+20));
+ await Promise.all([0,1,2,3].map(async()=>{while(i<chunks.length){const c=chunks[i++],b=db.batch();c.forEach(id=>b.delete(db.collection(col).doc(id)));await b.commit();done+=c.length;prog(done)}}));return done}
+document.querySelectorAll("[data-rs]").forEach(c=>c.onchange=()=>{$("rsconf").hidden=true;$("rsplan").innerHTML=""});
+$("rsrev").onclick=()=>run(async()=>{need(isAdmin(),"Admins only.");const sel=rsSel();need(sel.length,"Tick at least one item.");$("rsconf").hidden=true;$("rsres").innerHTML="";$("rsplan").textContent="Checking…";const L=[];
+ if(sel.includes("v"))L.push(`<li><strong>${(await idsOf("vouchers")).length}</strong> voucher record(s) will be deleted, together with their redemption history.</li>`);
+ if(sel.includes("n")){const c=await CFG().get();need(c.exists,"The number counter isn't set up, so there is nothing to reset.");const d=c.data();L.push(`<li>The number counter goes from <strong>${esc(fmt(d,d.nextNumber))}</strong> back to <strong>${esc(fmt(d,d.startNumber))}</strong>. Numbers still used by existing vouchers are skipped automatically.</li>`)}
+ if(sel.includes("a"))L.push(`<li><strong>${(await idsOf("vaudit")).length}</strong> audit log entries will be deleted.</li>`);
+ if(sel.includes("u"))L.push(`<li><strong>${(await idsOf("vusers")).filter(i=>i!==U(me).id).length}</strong> other user(s) will be deleted. You stay signed in.</li>`);
+ if(sel.includes("c")){if(!sel.includes("v"))need((await db.collection("vouchers").limit(1).get()).empty,"Vouchers still use the current categories. Tick Voucher records as well, or leave Categories alone.");L.push("<li>Categories go back to Paid Voucher and Complimentary Voucher.</li>")}
+ if(sel.includes("b"))L.push("<li>The company name and logo are cleared.</li>");
+ $("rsplan").innerHTML="<p>You are about to reset:</p><ul>"+L.join("")+"</ul>";$("rsconf").hidden=false});
+$("rsgo").onclick=()=>run(async()=>{need(isAdmin(),"Admins only.");const sel=rsSel();need(sel.length,"Tick at least one item.");need($("rstxt").value.trim()==="RESET","Type RESET to confirm.");
+ const us=await U(me).get();need(us.exists&&us.data().hash===await hp(me,$("rspin").value),"Your PIN is wrong.");
+ $("rsgo").disabled=true;const prog=t=>{$("rsres").textContent=t},did=[],win=db.collection("vcfg").doc("reset");let err=null;
+ try{
+  if($("rsbk").checked){prog("Downloading a backup first…");await doBackup()}
+  if(sel.some(k=>"vna".includes(k)))await win.set({until:firebase.firestore.Timestamp.fromMillis(Date.now()+15*60000),by:me}); // short window that allows these deletions
+  if(sel.includes("v")){const ids=await idsOf("vouchers");await delIds("vouchers",ids,n=>prog("Deleting vouchers… "+n+" of "+ids.length));did.push("vouchers ("+ids.length+")")}
+  if(sel.includes("a")){const ids=await idsOf("vaudit");await delIds("vaudit",ids,n=>prog("Deleting audit log… "+n+" of "+ids.length));did.push("audit log ("+ids.length+")")}
+  if(sel.includes("n")){const c=await CFG().get();need(c.exists,"The number counter isn't set up.");await CFG().update({nextNumber:c.data().startNumber});did.push("number counter")}
+  if(sel.includes("u")){const ids=(await idsOf("vusers")).filter(i=>i!==U(me).id);await delIds("vusers",ids,n=>prog("Deleting users… "+n+" of "+ids.length));did.push("users ("+ids.length+")")}
+  if(sel.includes("c")){const ids=(await idsOf("vcats")).filter(i=>!DEF_CATS[i]);await delIds("vcats",ids,()=>{});const b=db.batch();Object.keys(DEF_CATS).forEach((id,i)=>b.set(db.collection("vcats").doc(id),{name:DEF_CATS[id],order:i+1}));await b.commit();did.push("categories")}
+  if(sel.includes("b")){await db.collection("vbrand").doc("main").set({name:"",logo:"",updatedBy:me,updatedAt:ts()});brand={name:"",logo:""};applyBrand();did.push("branding")}
+ }catch(e){err=e}
+ try{await win.delete()}catch(e){}
+ if(did.length)await aud({type:"data_reset",number:did.join(", ")});
+ await loadCats().catch(()=>{});
+ $("rsres").innerHTML=`<div class="msg ${err?"err":""}">${did.length?"Reset done: "+esc(did.join(", "))+". ":""}${err?"Stopped with an error: "+esc(err.message||String(err))+". Anything not listed was not reset.":""}</div>`;
+ $("rsgo").disabled=false;$("rstxt").value=$("rspin").value="";$("rsconf").hidden=true;$("rsplan").innerHTML="";document.querySelectorAll("[data-rs]").forEach(c=>c.checked=false)});
 // ---- reports (everyone): date range, category, number range, status ----
 let repRows=[];
 const dOf=t=>t&&t.toDate?t.toDate().toLocaleDateString("en-CA"):"";
