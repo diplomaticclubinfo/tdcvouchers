@@ -38,7 +38,7 @@ nav{display:flex;flex-wrap:wrap}video{width:100%;max-width:420px;border-radius:8
 <label style="display:flex;gap:8px;align-items:center;font-weight:500"><input type="checkbox" id="lk" checked style="width:auto"> Keep me signed in on this device</label><p><button class="btn" id="lb" style="width:100%">Enter</button></p></div></div>
 
 <div id="app"><div class="top"><div class="brand" id="tbrand"></div>
-<nav><button data-t="list" data-m="1" class="on">Vouchers</button><button data-t="gen" data-m="1">Generate</button><button data-t="imp" data-m="1">Import</button><button data-t="cfg" data-m="1">Numbering</button><button data-t="cat" data-a="1">Categories</button><button data-t="usr" data-m="1">Users</button><button data-t="log" data-m="1">Audit log</button><button data-t="brd" data-a="1">Branding</button><button data-t="bak" data-a="1">Backup</button><button data-t="rep">Reports</button><button data-t="red">Redeem</button></nav>
+<nav><button data-t="list" data-m="1" class="on">Vouchers</button><button data-t="gen" data-m="1">Generate</button><button data-t="imp" data-m="1">Import / Export</button><button data-t="cfg" data-m="1">Numbering</button><button data-t="cat" data-a="1">Categories</button><button data-t="usr" data-m="1">Users</button><button data-t="log" data-m="1">Audit log</button><button data-t="brd" data-a="1">Branding</button><button data-t="bak" data-a="1">Backup</button><button data-t="rep">Reports</button><button data-t="red">Redeem</button></nav>
 <span id="who" style="color:var(--soft);font-size:13px"></span><button class="btn g sm" id="cpin">Change PIN</button><button class="btn g sm" id="out">Sign out</button></div>
 <main><div id="msg"></div>
 
@@ -84,7 +84,13 @@ nav{display:flex;flex-wrap:wrap}video{width:100%;max-width:420px;border-radius:8
 <label id="impcw" style="display:flex;gap:8px;align-items:center;font-weight:500"><input type="checkbox" id="imc" style="width:auto"> Blank cells clear the existing value (otherwise blank cells are ignored)</label>
 <p style="color:var(--soft)">Dates: YYYY-MM-DD, or DD/MM/YYYY (day first). Up to 1,000 rows per import. In Excel, format phone number columns as Text so leading zeros and + signs are kept. Updating only needs a "Voucher number" column plus the columns you want to change; a file exported with Download QR links (CSV) works too.</p>
 <div class="bar"><button class="btn g sm" id="impt1">Download template: update</button><button class="btn g sm" id="impt2">Download template: create</button></div>
-<div id="impplan"></div><div class="bar"><button class="btn" id="impgo" disabled>Import</button><button class="btn g" id="imprej" hidden>Download rejected rows</button></div><div id="impres"></div></div>
+<div id="impplan"></div><div class="bar"><button class="btn" id="impgo" disabled>Import</button><button class="btn g" id="imprej" hidden>Download rejected rows</button><button class="btn g" id="impdl" hidden>Download these vouchers with QR links (CSV)</button></div><div id="impres"></div>
+<h2 style="margin-top:32px">Export vouchers with QR links</h2>
+<p style="color:var(--soft)">One CSV with every voucher's QR link, category, dates, status, title, recipient, contact and remarks. Leave a filter empty to include everything. The file can be edited in Excel and imported back using "Update existing vouchers".</p>
+<div class="row"><div><label>Number from</label><input id="xf" placeholder="optional"></div><div><label>Number to</label><input id="xt" placeholder="optional"></div>
+<div><label>Category</label><select id="xc"><option value="">All categories</option></select></div>
+<div><label>Status</label><select id="xs"><option value="">All statuses</option><option value="active">Active</option><option value="not yet valid">Not yet valid</option><option value="expired">Expired</option><option value="redeemed">Redeemed</option><option value="voided">Voided</option></select></div></div>
+<div class="bar"><button class="btn" id="xgo">Export vouchers (CSV)</button></div></div>
 
 <div class="card" id="cat" hidden><h2>Categories</h2><p>These appear in the voucher category lists, filters and reports. Renaming a category updates every voucher that uses it. A category can only be deleted when no voucher uses it.</p>
 <table><thead><tr><th>Name</th><th>Code</th><th></th></tr></thead><tbody id="crows"></tbody></table>
@@ -219,23 +225,25 @@ $("qdl").onclick=()=>run(async()=>{need(isMgr(),"Not allowed.");const sel=Array.
   for(let i=0;i<sel.length;i++){z.file(sel[i].voucherNumber+"."+f,await one(sel[i]));if(i%25===0){say("Preparing QR codes… "+i+" of "+sel.length);await new Promise(r=>setTimeout(r))}}
   saveBlob(await z.generateAsync({type:"blob"}),"qr-codes-"+sel[0].voucherNumber+"-to-"+sel[sel.length-1].voucherNumber+".zip")}
  await aud({type:"qr_exported",number:sel.length+" × "+f.toUpperCase()});say(sel.length+" QR code(s) downloaded"+(sel.length>1?" in one ZIP file with one "+f.toUpperCase()+" per voucher, named by voucher number.":"."))});
-// ---- QR link list as CSV (admin): the ticked vouchers, or a voucher number range ----
+// ---- QR link list as CSV: the ticked vouchers, or a voucher number range ----
+async function saveLinks(rows){need(rows.length,"No vouchers match.");
+ rows=rows.slice().sort((x,y)=>(np(x.voucherNumber)-np(y.voucherNumber))||String(x.voucherNumber).localeCompare(String(y.voucherNumber)));
+ const cell=x=>{x=String(x==null?"":x);if(/^[=+\-@]/.test(x))x="'"+x;return '"'+x.replace(/"/g,'""')+'"'};
+ const csv="\ufeff"+[["Voucher number","QR link","Category","Start date","End date","Status","Title or description","Recipient name","Contact number","Remarks"]].concat(rows.map(v=>[v.voucherNumber,qrUrl(v),catName(v.category),v.startDate,v.endDate,stat(v),v.title||"",v.recipientName||"",v.contactNumber||"",v.remarks||""])).map(r=>r.map(cell).join(",")).join("\r\n");
+ saveBlob(new Blob([csv],{type:"text/csv"}),"qr-links-"+rows[0].voucherNumber+"-to-"+rows[rows.length-1].voucherNumber+".csv");
+ await aud({type:"qr_links_exported",number:rows.length+" links"});say(rows.length+" voucher(s) exported with their QR links.")}
 $("ldl").onclick=()=>run(async()=>{need(isMgr(),"Not allowed.");
  let rows=Array.from(document.querySelectorAll("#rows input:checked")).map(c=>cache[c.dataset.i]);
  if(!rows.length){const a=$("lf").value.trim(),b=$("lt").value.trim(),nf=np(a),nt=np(b);
   need((!a||!isNaN(nf))&&(!b||!isNaN(nt)),"Voucher numbers must contain digits.");need(isNaN(nf)||isNaN(nt)||nf<=nt,"The first number must not be higher than the last.");
   if(!a&&!b&&!confirm("No vouchers are ticked and no number range is set. Export the QR links for ALL vouchers?"))return;
   rows=(await db.collection("vouchers").get()).docs.map(d=>d.data()).filter(v=>{if(v.status==="deleted")return false;const n=np(v.voucherNumber);return(isNaN(nf)||n>=nf)&&(isNaN(nt)||n<=nt)})}
- need(rows.length,"No vouchers match.");
- rows=rows.slice().sort((x,y)=>(np(x.voucherNumber)-np(y.voucherNumber))||String(x.voucherNumber).localeCompare(String(y.voucherNumber)));
- const cell=x=>{x=String(x==null?"":x);if(/^[=+\-@]/.test(x))x="'"+x;return '"'+x.replace(/"/g,'""')+'"'};
- const csv="\ufeff"+[["Voucher number","QR link","Category","Start date","End date","Status","Title or description","Recipient name","Contact number","Remarks"]].concat(rows.map(v=>[v.voucherNumber,qrUrl(v),catName(v.category),v.startDate,v.endDate,stat(v),v.title||"",v.recipientName||"",v.contactNumber||"",v.remarks||""])).map(r=>r.map(cell).join(",")).join("\r\n");
- saveBlob(new Blob([csv],{type:"text/csv"}),"qr-links-"+rows[0].voucherNumber+"-to-"+rows[rows.length-1].voucherNumber+".csv");
- await aud({type:"qr_links_exported",number:rows.length+" links"});say(rows.length+" QR link(s) downloaded as CSV.")});
+ await saveLinks(rows)});
+
 // ---- categories: everyone reads, admins add / rename / delete ----
 function fillCats(){const ids=Object.keys(cats).sort((a,b)=>(cats[a].order||0)-(cats[b].order||0));
  const opts=ids.map(id=>`<option value="${esc(id)}">${esc(cats[id].name)}</option>`).join("");
- [["gc",""],["ec",""],["fc","All"],["rc","All categories"]].forEach(a=>{const el=$(a[0]),v=el.value;el.innerHTML=(a[1]?`<option value="">${a[1]}</option>`:"")+opts;if(Array.from(el.options).some(o=>o.value===v))el.value=v})}
+ [["gc",""],["ec",""],["fc","All"],["rc","All categories"],["xc","All categories"]].forEach(a=>{const el=$(a[0]),v=el.value;el.innerHTML=(a[1]?`<option value="">${a[1]}</option>`:"")+opts;if(Array.from(el.options).some(o=>o.value===v))el.value=v})}
 async function loadCats(){const s=await db.collection("vcats").get();cats={};s.docs.forEach(d=>{cats[d.id]=d.data()});
  if(!s.size){Object.keys(DEF_CATS).forEach((id,i)=>{cats[id]={name:DEF_CATS[id],order:i+1}});
   if(isAdmin()){try{const b=db.batch();Object.keys(DEF_CATS).forEach((id,i)=>b.set(db.collection("vcats").doc(id),{name:DEF_CATS[id],order:i+1}));await b.commit()}catch(e){}}}
@@ -255,7 +263,7 @@ $("cadd").onclick=()=>run(async()=>{need(isAdmin(),"Admins only.");const t=$("cn
 // ---- CSV import (admin + supervisor): create new vouchers, or update existing ones ----
 const HDR={number:["voucher number","voucher no","voucher","number","no"],category:["category","type","voucher type"],start:["start date","start","valid from"],end:["end date","end","valid to","expiry","expiry date"],title:["title or description","title","description"],recipient:["recipient name","recipient","name"],contact:["contact number","contact","phone","mobile"],remarks:["remarks","remark","notes","note"]};
 const FIELD={title:"title",recipient:"recipientName",contact:"contactNumber",remarks:"remarks"},MAXLEN={title:200,recipient:120,contact:40,remarks:500};
-let imp=null,impText="";
+let imp=null,impText="",lastRows=[];
 function parseCsv(text){text=text.replace(/^\ufeff/,"");const first=text.split(/\r?\n/,1)[0];
  const delim=[",",";","\t"].reduce((b,d)=>first.split(d).length>first.split(b).length?d:b,",");const rows=[];let row=[],f="",q=false;
  for(let i=0;i<text.length;i++){const c=text[i];
@@ -269,7 +277,7 @@ function normDate(x){x=x.trim();let y,m,d,t;
  const dt=new Date(Date.UTC(y,m-1,d));if(dt.getUTCFullYear()!==y||dt.getUTCMonth()!==m-1||dt.getUTCDate()!==d)return null;return y+"-"+String(m).padStart(2,"0")+"-"+String(d).padStart(2,"0")}
 const catId=x=>{x=x.trim();if(!x)return null;const k=Object.keys(cats);return k.find(i=>i.toLowerCase()===x.toLowerCase())||k.find(i=>cats[i].name.toLowerCase()===x.toLowerCase())||null};
 const csvOut=rows=>"\ufeff"+rows.map(r=>r.map(x=>{x=String(x==null?"":x);if(/^[=+\-@]/.test(x))x="'"+x;return '"'+x.replace(/"/g,'""')+'"'}).join(",")).join("\r\n");
-function analyzeImport(){return run(async()=>{need(isMgr(),"Not allowed.");imp=null;$("impgo").disabled=true;$("imprej").hidden=true;$("impres").innerHTML="";$("impcw").hidden=$("impm").value!=="update";
+function analyzeImport(){return run(async()=>{need(isMgr(),"Not allowed.");imp=null;$("impgo").disabled=true;$("imprej").hidden=true;$("impdl").hidden=true;$("impres").innerHTML="";$("impcw").hidden=$("impm").value!=="update";
  if(!impText){$("impplan").innerHTML="";return}
  const rows=parseCsv(impText);need(rows.length>=2,"The file has no data rows.");need(rows.length<=1001,"Import up to 1,000 rows at a time.");
  const head=rows[0].map(x=>x.trim().toLowerCase()),col={};Object.keys(HDR).forEach(k=>{const i=head.findIndex(x=>HDR[k].includes(x));if(i>=0)col[k]=i});
@@ -286,34 +294,41 @@ function analyzeImport(){return run(async()=>{need(isMgr(),"Not allowed.");imp=n
   for(const k of ["title","recipient","contact","remarks"]){const v=get(r,k);if(v===undefined)continue;if(v.length>MAXLEN[k])return no("Too long: "+k+" (max "+MAXLEN[k]+")");if(v!==""||clear||mode==="create")d[FIELD[k]]=v}
   if(mode==="create"){if(exist[n])return no("Voucher number already exists");const c=catId(get(r,"category"));if(!c)return no("Unknown category '"+get(r,"category")+"'");
    const s=normDate(get(r,"start")),e=normDate(get(r,"end"));if(!s||!e)return no("Start and end dates must be YYYY-MM-DD or DD/MM/YYYY");if(e<s)return no("End date is before the start date");
-   items.push({n:n,data:Object.assign({title:"",recipientName:"",contactNumber:"",remarks:""},d,{category:c,startDate:s,endDate:e})});return}
+   items.push({n:n,data:Object.assign({title:"",recipientName:"",contactNumber:"",remarks:""},d,{category:c,startDate:s,endDate:e}),doc:null});return}
   const ex=exist[n];if(!ex||ex.status==="deleted")return no("Voucher not found");
   if(col.category!==undefined&&get(r,"category")){const c=catId(get(r,"category"));if(!c)return no("Unknown category '"+get(r,"category")+"'");d.category=c}
   if(col.start!==undefined&&get(r,"start")){const s=normDate(get(r,"start"));if(!s)return no("Invalid start date");d.startDate=s}
   if(col.end!==undefined&&get(r,"end")){const e=normDate(get(r,"end"));if(!e)return no("Invalid end date");d.endDate=e}
   if((d.endDate||ex.endDate)<(d.startDate||ex.startDate))return no("End date is before the start date");
   Object.keys(d).forEach(k=>{if(d[k]===(ex[k]==null?"":ex[k]))delete d[k]});
-  if(!Object.keys(d).length){same++;return}items.push({n:n,data:d})});
+  if(!Object.keys(d).length){same++;return}items.push({n:n,data:d,ex:ex})});
  imp={mode:mode,items:items,rej:rej,head:rows[0]};
  const nm=x=>mode==="create"?"will be created":"will be updated";
  $("impplan").innerHTML=`<div class="msg"><strong>${items.length}</strong> row(s) ${nm()}${mode==="update"?`, ${same} already up to date`:""}, <strong>${rej.length}</strong> rejected.</div>`+
   (items.length?`<table><thead><tr><th>Voucher</th><th>${mode==="create"?"Category":"Changes"}</th><th>${mode==="create"?"Valid":""}</th></tr></thead><tbody>${items.slice(0,10).map(it=>`<tr><td>${esc(it.n)}</td><td>${mode==="create"?esc(catName(it.data.category)):esc(Object.keys(it.data).join(", "))}</td><td>${mode==="create"?esc(it.data.startDate+" to "+it.data.endDate):""}</td></tr>`).join("")}</tbody></table>${items.length>10?`<p style="color:var(--soft)">…and ${items.length-10} more</p>`:""}`:"")+
   (rej.length?`<h3 style="margin-top:16px">Rejected rows</h3><table><tbody>${rej.slice(0,100).map(x=>`<tr><td>Line ${x.line}</td><td>${esc(x.number)}</td><td>${esc(x.reason)}</td></tr>`).join("")}</tbody></table>${rej.length>100?`<p style="color:var(--soft)">…and ${rej.length-100} more (see the downloadable list)</p>`:""}`:"");
  $("impgo").textContent="Import "+items.length+" voucher(s)";$("impgo").disabled=!items.length;$("imprej").hidden=!rej.length})}
+$("xgo").onclick=()=>run(async()=>{need(isMgr(),"Not allowed.");const a=$("xf").value.trim(),b=$("xt").value.trim(),nf=np(a),nt=np(b),cat=$("xc").value,st=$("xs").value;
+ need((!a||!isNaN(nf))&&(!b||!isNaN(nt)),"Voucher numbers must contain digits.");need(isNaN(nf)||isNaN(nt)||nf<=nt,"The first number must not be higher than the last.");
+ let q=db.collection("vouchers");if(cat)q=q.where("category","==",cat);
+ await saveLinks((await q.get()).docs.map(d=>d.data()).filter(v=>{if(v.status==="deleted")return false;const n=np(v.voucherNumber);return(isNaN(nf)||n>=nf)&&(isNaN(nt)||n<=nt)&&(!st||stat(v)===st)}))});
+$("impdl").onclick=()=>run(async()=>{need(lastRows.length,"Nothing to download.");await saveLinks(lastRows)});
 $("impf").onchange=async()=>{const f=$("impf").files[0];impText=f?await f.text():"";analyzeImport()};$("impm").onchange=analyzeImport;$("imc").onchange=analyzeImport;
 $("imprej").onclick=()=>{if(!imp||!imp.rej.length)return;saveBlob(new Blob([csvOut([imp.head.concat(["Reason"])].concat(imp.rej.map(x=>x.row.concat([x.reason]))))],{type:"text/csv"}),"import-rejected-rows.csv")};
-$("impt1").onclick=()=>saveBlob(new Blob([csvOut([["Voucher number","Title or description","Recipient name","Contact number","Remarks"],["6126","Welcome gift","Sample Person","+97400000000",""]])],{type:"text/csv"}),"template-update-vouchers.csv");
+$("impt1").onclick=()=>saveBlob(new Blob([csvOut([["Voucher number","QR link (created by the app, ignored on import)","Title or description","Recipient name","Contact number","Remarks"],["6126","","Welcome gift","Sample Person","+97400000000",""]])],{type:"text/csv"}),"template-update-vouchers.csv");
 $("impt2").onclick=()=>saveBlob(new Blob([csvOut([["Voucher number","Category","Start date","End date","Title or description","Recipient name","Contact number","Remarks"],["6126",(cats[Object.keys(cats)[0]]||{name:"Paid Voucher"}).name,"2026-11-01","2026-12-31","Welcome gift","Sample Person","+97400000000",""]])],{type:"text/csv"}),"template-create-vouchers.csv");
 $("impgo").onclick=()=>run(async()=>{need(isMgr()&&imp&&imp.items.length,"Choose a file first.");const mode=imp.mode,items=imp.items,verb=mode==="create"?"Create":"Update";
- if(!confirm(verb+" "+items.length+" voucher(s) from this file?"))return;$("impgo").disabled=true;let done=0;const bad=[];
- const one=it=>mode==="create"?V(it.n).set(mk(it.n,null,it.data)):V(it.n).update(Object.assign({},it.data,{modifiedAt:ts(),modifiedBy:me}));
+ if(!confirm(verb+" "+items.length+" voucher(s) from this file?"))return;$("impgo").disabled=true;let done=0;const bad=[],okN=new Set();
+ if(mode==="create")items.forEach(it=>{it.doc=mk(it.n,null,it.data)});
+ const one=it=>mode==="create"?V(it.n).set(it.doc):V(it.n).update(Object.assign({},it.data,{modifiedAt:ts(),modifiedBy:me}));
  for(let i=0;i<items.length;i+=400){const part=items.slice(i,i+400),b=db.batch();
-  part.forEach(it=>{mode==="create"?b.set(V(it.n),mk(it.n,null,it.data)):b.update(V(it.n),Object.assign({},it.data,{modifiedAt:ts(),modifiedBy:me}))});
-  try{await b.commit();done+=part.length}catch(e){for(const it of part){try{await one(it);done++}catch(e2){bad.push(it.n)}}}
+  part.forEach(it=>{mode==="create"?b.set(V(it.n),it.doc):b.update(V(it.n),Object.assign({},it.data,{modifiedAt:ts(),modifiedBy:me}))});
+  try{await b.commit();done+=part.length;part.forEach(it=>okN.add(it.n))}catch(e){for(const it of part){try{await one(it);done++;okN.add(it.n)}catch(e2){bad.push(it.n)}}}
   $("impres").textContent="Importing… "+(done+bad.length)+" of "+items.length}
+ lastRows=items.filter(it=>okN.has(it.n)).map(it=>mode==="create"?it.doc:Object.assign({},it.ex,it.data));
  await aud({type:mode==="create"?"vouchers_imported":"vouchers_bulk_updated",number:done+" saved"+(bad.length?", "+bad.length+" failed":"")});
  $("impres").innerHTML=`<div class="msg ${bad.length?"err":""}">${done} voucher(s) ${mode==="create"?"created":"updated"}${bad.length?". These could not be saved: "+esc(bad.slice(0,20).join(", "))+(bad.length>20?"…":"")+". Choose the file again to retry; vouchers already saved are skipped.":"."}</div>`;
- imp=null;impText="";$("impf").value="";$("impplan").innerHTML="";$("imprej").hidden=true});
+ $("impdl").hidden=!lastRows.length;imp=null;impText="";$("impf").value="";$("impplan").innerHTML="";$("imprej").hidden=true});
 // ---- generate ----
 async function getCfg(){const s=await CFG().get();need(s.exists,"Numbering is not set up yet. Open Numbering first.");return s.data()}
 async function pick(c,qty){const seqs=[];let n=c.nextNumber; // skips numbers already used (e.g. entered manually or deleted)
