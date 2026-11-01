@@ -442,6 +442,7 @@ $("bkf").onchange=()=>run(async()=>{plan=null;$("bkgo").disabled=true;$("bkplan"
    if(n&&Number.isInteger(n.nextNumber)&&Number.isInteger(n.startNumber)&&Number.isInteger(n.digits)&&typeof n.prefix==="string"&&typeof n.suffix==="string"){if(!cur.exists)act="create";else if(n.nextNumber>cur.data().nextNumber)act="advance"}
    P.vcfg={total:n?1:0,add:act==="none"?[]:[act],skip:act==="none"&&n?1:0,bad:0,cfg:n};continue}
   const ex=new Set((await db.collection(c).get()).docs.map(d=>d.id)),add=[];let skip=0,bad=0;
+  if(c==="vbrand"&&ex.has("main")){const cur=(await db.collection("vbrand").doc("main").get()).data()||{};if(!cur.name&&!cur.logo)ex.delete("main")} // empty branding (e.g. after a reset) can be restored
   Object.keys(src).forEach(id=>{if(ex.has(id))skip++;else if(okDoc[c](id,src[id]))add.push([id,src[id]]);else bad++});
   P[c]={total:Object.keys(src).length,add:add,skip:skip,bad:bad}}
  plan=P;const todo=P.vcfg.add.length+P.vbrand.add.length+P.vcats.add.length+P.vusers.add.length+P.vouchers.add.length+P.vaudit.add.length;
