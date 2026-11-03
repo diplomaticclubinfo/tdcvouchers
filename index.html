@@ -146,7 +146,7 @@ nav{display:flex;flex-wrap:wrap}video{width:100%;max-width:420px;border-radius:8
 <script>
 (function(){"use strict";
 // STEP 4 of README.md: paste YOUR new project's firebaseConfig values between the quotes.
-const FIREBASE_CONFIG={apiKey: "AIzaSyACu2vtPryh90P65Ky1mfZGuXh3oXWOJyM",
+const FIREBASE_CONFIG={ apiKey: "AIzaSyACu2vtPryh90P65Ky1mfZGuXh3oXWOJyM",
 
   authDomain: "voucher-system-91b1c.firebaseapp.com",
 
@@ -496,8 +496,8 @@ $("rsgo").onclick=()=>run(async()=>{need(isAdmin(),"Admins only.");const sel=rsS
 let repRows=[];
 const dOf=t=>t&&t.toDate?t.toDate().toLocaleDateString("en-CA"):"";
 const np=s=>{const m=String(s||"").match(/\d+/);return m?parseInt(m[0],10):NaN};
-const repCols=()=>["Voucher number","Category","Start date","End date","Status","Date created","Redeemed at","Redeemed by"].concat(isMgr()?["Recipient","Contact"]:[]);
-const repCells=v=>[v.voucherNumber,catName(v.category),v.startDate,v.endDate,stat(v),dOf(v.createdAt),v.redeemedAt&&v.redeemedAt.toDate?v.redeemedAt.toDate().toLocaleString():"",v.redeemedBy||""].concat(isMgr()?[v.recipientName||"",v.contactNumber||""]:[]);
+const repCols=()=>["Voucher number","Category","Start date","End date","Status","Date created","Redeemed at","Redeemed by"].concat(["Recipient","Contact"]);
+const repCells=v=>[v.voucherNumber,catName(v.category),v.startDate,v.endDate,stat(v),dOf(v.createdAt),v.redeemedAt&&v.redeemedAt.toDate?v.redeemedAt.toDate().toLocaleString():"",v.redeemedBy||""].concat([v.recipientName||"",v.contactNumber||""]);
 function runReport(){return run(async()=>{
  const f=$("rf").value,t=$("rt").value,basis=$("rb").value,cat=$("rc").value,st=$("rs").value,a=$("rnf").value.trim(),b=$("rnt").value.trim(),nf=np(a),nt=np(b);
  need(!f||!t||f<=t,"The from date must be on or before the to date.");
@@ -524,7 +524,7 @@ $("rprt").onclick=()=>{if(!repRows.length)return say("Run a report with at least
 function loadDl(){db.collection("vouchers").orderBy("seq","desc").limit(500).get().then(s=>{$("dl").innerHTML=s.docs.filter(d=>d.data().status==="active").map(d=>`<option value="${esc(d.id)}">`).join("")}).catch(()=>{})}
 function showV(v){const st=v.status==="deleted"?"not found":stat(v);
  if(v.status==="deleted"){$("sres").innerHTML=`<div class="msg err">No voucher found.</div>`;return}
- $("sres").innerHTML=`<h3>${esc(v.voucherNumber)}</h3><p>${catName(v.category)}${v.title?" – "+esc(v.title):""}<br>Valid ${esc(v.startDate)} to ${esc(v.endDate)}<br>Status: <span class="tag ${st.split(" ")[0]}">${esc(st)}</span></p>${st==="active"?'<button class="btn" id="rd">Redeem now</button>':""}`;
+ $("sres").innerHTML=`<h3>${esc(v.voucherNumber)}</h3><p>${catName(v.category)}${v.title?" – "+esc(v.title):""}<br>Valid ${esc(v.startDate)} to ${esc(v.endDate)}<br>Status: <span class="tag ${st.split(" ")[0]}">${esc(st)}</span></p>${(v.recipientName||v.contactNumber||v.remarks)?`<p style="white-space:pre-wrap">${v.recipientName?"Recipient: "+esc(v.recipientName)+"\n":""}${v.contactNumber?"Contact: "+esc(v.contactNumber)+"\n":""}${v.remarks?"Remarks: "+esc(v.remarks):""}</p>`:""}${st==="active"?'<button class="btn" id="rd">Redeem now</button>':""}`;
  const b=$("rd");if(b)b.onclick=()=>{if(confirm("Redeem voucher "+v.voucherNumber+"? This cannot be undone."))run(async()=>{await db.runTransaction(async tx=>{const s=await tx.get(V(v.voucherNumber));need(s.exists&&stat(s.data())==="active","This voucher can no longer be redeemed.");
   tx.update(V(v.voucherNumber),{status:"redeemed",redeemedAt:ts(),redeemedBy:me,modifiedAt:ts(),modifiedBy:me});audit(tx,{type:"voucher_redeemed",number:v.voucherNumber})});lookupNum(v.voucherNumber);loadDl()})}}
 function lookupNum(n){return run(async()=>{need(n,"Enter a voucher number.");const s=await V(n.trim()).get();need(s.exists,"No voucher found with that number.");showV(s.data())})}
