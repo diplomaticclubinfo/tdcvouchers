@@ -29,7 +29,7 @@ table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:8px;bord
 @media print{body>*:not(#print){display:none!important}#print{display:block}}
 
 nav{display:flex;flex-wrap:wrap}video{width:100%;max-width:420px;border-radius:8px;background:#000}
-.btn.sm{padding:5px 10px;font-size:13px}.ck{display:flex;gap:8px;align-items:flex-start;font-weight:500;color:var(--ink);font-size:15px;margin:8px 0}.ck input{width:auto;margin-top:3px}.btn.dng{background:none;color:var(--brick);border:1px solid rgba(174,69,48,.4)}
+.btn.sm{padding:5px 10px;font-size:13px}.ck{display:flex;gap:8px;align-items:flex-start;font-weight:500;color:var(--ink);font-size:15px;margin:8px 0}.ck input{width:auto;margin-top:3px}.tgrid{display:grid;grid-template-columns:minmax(0,1fr) 290px;gap:16px;margin:14px 0}@media(max-width:820px){.tgrid{grid-template-columns:1fr}}#tdc{position:relative;width:100%;touch-action:none}#tdc .tv{box-shadow:0 0 0 1px var(--line)}#tdc [data-k]{cursor:move;touch-action:none;outline:1px dashed rgba(0,0,0,.3)}#tdc .sel{outline:2px solid var(--forest)}.tv{break-inside:avoid}.btn.dng{background:none;color:var(--brick);border:1px solid rgba(174,69,48,.4)}
 </style></head><body>
 
 <div id="login"><div class="card"><div class="brand" id="lbrand"></div>
@@ -38,13 +38,14 @@ nav{display:flex;flex-wrap:wrap}video{width:100%;max-width:420px;border-radius:8
 <label style="display:flex;gap:8px;align-items:center;font-weight:500"><input type="checkbox" id="lk" checked style="width:auto"> Keep me signed in on this device</label><p><button class="btn" id="lb" style="width:100%">Enter</button></p></div></div>
 
 <div id="app"><div class="top"><div class="brand" id="tbrand"></div>
-<nav><button data-t="list" data-m="1" class="on">Vouchers</button><button data-t="gen" data-m="1">Generate</button><button data-t="imp" data-m="1">Import / Export</button><button data-t="cfg" data-m="1">Numbering</button><button data-t="cat" data-a="1">Categories</button><button data-t="usr" data-m="1">Users</button><button data-t="log" data-m="1">Audit log</button><button data-t="brd" data-a="1">Branding</button><button data-t="bak" data-a="1">Backup</button><button data-t="rst" data-a="1">Reset data</button><button data-t="rep">Reports</button><button data-t="red">Redeem</button></nav>
+<nav><button data-t="list" data-m="1" class="on">Vouchers</button><button data-t="gen" data-m="1">Generate</button><button data-t="imp" data-m="1">Import / Export</button><button data-t="tpl" data-m="1">Templates</button><button data-t="cfg" data-m="1">Numbering</button><button data-t="cat" data-a="1">Categories</button><button data-t="usr" data-m="1">Users</button><button data-t="log" data-m="1">Audit log</button><button data-t="brd" data-a="1">Branding</button><button data-t="bak" data-a="1">Backup</button><button data-t="rst" data-a="1">Reset data</button><button data-t="rep">Reports</button><button data-t="red">Redeem</button></nav>
 <span id="who" style="color:var(--soft);font-size:13px"></span><button class="btn g sm" id="cpin">Change PIN</button><button class="btn g sm" id="out">Sign out</button></div>
 <main><div id="msg"></div>
 
 <div class="card" id="list" hidden><div class="bar"><div><label>Find by number</label><input id="q" placeholder="Exact number"></div>
 <div><label>Category</label><select id="fc"><option value="">All</option><option value="PAID">Paid Voucher</option><option value="COMPLIMENTARY">Complimentary Voucher</option></select></div>
 <button class="btn" id="go">Search</button><button class="btn g" id="prt">Print selected</button>
+<div><label>Print layout</label><select id="ptp"><option value="">Standard layout</option></select></div><label class="ck" style="margin:0 0 8px"><input type="checkbox" id="pone"> One per page</label>
 <div><label>QR file type</label><select id="qf"><option value="pdf">PDF (vector)</option><option value="svg">SVG (vector)</option><option value="png">PNG (300 dpi)</option></select></div><div><label>QR size (mm)</label><input id="qs" type="number" min="10" max="200" value="30" style="width:90px"></div><button class="btn g" id="qdl">Download QR codes</button>
 <div><label>QR links CSV: number from</label><input id="lf" placeholder="optional" style="width:110px"></div><div><label>to</label><input id="lt" placeholder="optional" style="width:110px"></div><button class="btn g" id="ldl">Download QR links (CSV)</button><label style="margin:0 0 8px"><input type="checkbox" id="showR" style="width:auto"> Show recipient on print</label></div>
 <table><thead><tr><th><input type="checkbox" id="sel" style="width:auto" aria-label="Select all vouchers"></th><th>Number</th><th>Category</th><th>Valid</th><th>Status</th><th>Recipient</th><th></th></tr></thead><tbody id="rows"></tbody></table></div>
@@ -65,6 +66,15 @@ nav{display:flex;flex-wrap:wrap}video{width:100%;max-width:420px;border-radius:8
 <label>Remarks (optional)</label><textarea id="gm" rows="2"></textarea>
 <label>Manual voucher number (optional: creates one voucher with this number instead)</label><input id="gn">
 <div class="bar"><button class="btn g" id="pv">Preview range</button><button class="btn" id="gb" disabled>Confirm and generate</button></div><div id="gres"></div></div>
+
+<div class="card" id="tpl" hidden><h2>Voucher design templates</h2>
+<p style="color:var(--soft)">Upload your artwork, drag the data fields into place and style them. Make one template per event or promotion, then pick it from the Print layout list on the Vouchers tab. Fonts are the ones installed on the computer that prints.</p>
+<div class="bar"><div><label>Template</label><select id="tsel"></select></div><button class="btn g" id="tnew">New</button><button class="btn g" id="tdup">Duplicate</button><button class="btn dng" id="tdel">Delete</button></div>
+<div id="ted"><div class="row"><div><label>Template name (event or promotion)</label><input id="tn" maxlength="80"></div><div><label>Width (mm)</label><input id="tw" type="number" min="20" max="500"></div><div><label>Height (mm)</label><input id="th" type="number" min="20" max="500"></div><div><label>Background colour</label><input id="tbc" type="color"></div></div>
+<div class="bar"><div><label>Artwork image (JPG, PNG or WebP)</label><input id="tbg" type="file" accept="image/*"></div><button class="btn g sm" id="tbgx">Remove image</button></div>
+<div class="tgrid"><div id="tstage"><div id="tdc"></div><p style="color:var(--soft);font-size:13px">Drag a field on the preview to move it. The preview uses sample data and shows the real size ratio.</p></div>
+<div id="tpanel"><h3 style="font-size:16px">Fields (tick to show)</h3><div id="tflds"></div><h3 style="font-size:16px;margin-top:14px">Selected field</h3><div id="tprop"></div></div></div>
+<div class="bar"><button class="btn" id="tsave">Save template</button></div></div></div>
 
 <div class="card" id="cfg" hidden><h2>Voucher number configuration</h2><div class="row">
 <div><label>Starting voucher number</label><input id="cs" type="number" min="0"></div><div><label>Digits (0 = no padding)</label><input id="cd" type="number" min="0" max="12" value="0"></div>
@@ -120,6 +130,7 @@ nav{display:flex;flex-wrap:wrap}video{width:100%;max-width:420px;border-radius:8
 <label class="ck"><input type="checkbox" data-rs="u"> Users: everyone except you</label>
 <label class="ck"><input type="checkbox" data-rs="c"> Categories: back to Paid Voucher and Complimentary Voucher</label>
 <label class="ck"><input type="checkbox" data-rs="b"> Branding: company name and logo</label>
+<label class="ck"><input type="checkbox" data-rs="t"> Design templates: all saved voucher designs</label>
 <div class="bar"><button class="btn g" id="rsrev">Review</button></div><div id="rsplan"></div>
 <div id="rsconf" hidden><label class="ck"><input type="checkbox" id="rsbk" checked> Download a backup file first (recommended)</label>
 <div class="row"><div><label>Type RESET to confirm</label><input id="rstxt" autocomplete="off"></div><div><label>Your PIN</label><input id="rspin" type="password" inputmode="numeric" autocomplete="off"></div></div>
@@ -146,7 +157,7 @@ nav{display:flex;flex-wrap:wrap}video{width:100%;max-width:420px;border-radius:8
 <script>
 (function(){"use strict";
 // STEP 4 of README.md: paste YOUR new project's firebaseConfig values between the quotes.
-const FIREBASE_CONFIG={ apiKey: "AIzaSyACu2vtPryh90P65Ky1mfZGuXh3oXWOJyM",
+const FIREBASE_CONFIG={apiKey: "AIzaSyACu2vtPryh90P65Ky1mfZGuXh3oXWOJyM",
 
   authDomain: "voucher-system-91b1c.firebaseapp.com",
 
@@ -185,7 +196,7 @@ const isAdmin=()=>role==="admin",isMgr=()=>role==="admin"||role==="supervisor",r
 function enter(){$("login").hidden=true;$("app").style.display="block";$("who").textContent=me+" ("+roleLabel(role)+")";
  document.querySelectorAll("nav [data-a],nav [data-m]").forEach(b=>{b.hidden=!(b.hasAttribute("data-a")?isAdmin():isMgr())});
  if(!isAdmin()){const o=$("ar").querySelector('option[value="admin"]');if(o)o.remove()}
- loadCats().catch(()=>{Object.keys(DEF_CATS).forEach((id,i)=>cats[id]={name:DEF_CATS[id],order:i+1});fillCats()}).then(()=>{const q=new URLSearchParams(location.search).get("q");show("red");if(q)lookupQr(q);else if(isMgr())show("list")})}
+ loadCats().catch(()=>{Object.keys(DEF_CATS).forEach((id,i)=>cats[id]={name:DEF_CATS[id],order:i+1});fillCats()}).then(()=>isMgr()?loadTpls().catch(()=>{}):0).then(()=>{const q=new URLSearchParams(location.search).get("q");show("red");if(q)lookupQr(q);else if(isMgr())show("list")})}
 $("lb").onclick=async()=>{const n=$("ln").value.trim(),p=$("lp").value,m=$("lmsg");m.innerHTML="";
  try{need(n&&p.length>=4,"Enter your name and a PIN of at least 4 digits.");const ref=U(n),h=await hp(n,p),s=await ref.get();let r="admin";
   if(s.exists){need(s.data().hash===h,"Wrong PIN.");r=s.data().role||"admin"}
@@ -196,9 +207,9 @@ $("out").onclick=()=>{ST.clear();location.href=location.pathname};
 $("cpin").onclick=()=>run(async()=>{const cur=prompt("Current PIN");if(cur===null)return;const s=await U(me).get();need(s.exists&&s.data().hash===await hp(me,cur),"Current PIN is wrong.");
  const nw=prompt("New PIN (4+ digits)");if(nw===null)return;need(nw.length>=4,"PIN must be at least 4 characters.");await U(me).update({hash:await hp(me,nw)});say("PIN changed.")});
 if(me&&role)U(me).get().then(s=>{if(!s.exists){ST.clear();location.reload()}else{role=s.data().role||"admin";enter()}}).catch(()=>enter());
-const tabs=["list","ed","gen","imp","cfg","cat","usr","log","brd","bak","rst","rep","red"];
-function show(t){stopCam();if((["cat","brd","bak","rst"].includes(t)&&!isAdmin())||(["list","ed","gen","imp","cfg","usr","log"].includes(t)&&!isMgr()))t="red";tabs.forEach(x=>$(x).hidden=x!==t);document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.t===t||(t==="ed"&&b.dataset.t==="list")));
- if(t==="list")search();if(t==="cfg")loadCfg();if(t==="log")loadLog();if(t==="usr")loadUsers();if(t==="cat")loadCatsTab();if(t==="brd")loadBrd();if(t==="red")loadDl()}
+const tabs=["list","ed","gen","imp","tpl","cfg","cat","usr","log","brd","bak","rst","rep","red"];
+function show(t){stopCam();if((["cat","brd","bak","rst"].includes(t)&&!isAdmin())||(["list","ed","gen","imp","tpl","cfg","usr","log"].includes(t)&&!isMgr()))t="red";tabs.forEach(x=>$(x).hidden=x!==t);document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.t===t||(t==="ed"&&b.dataset.t==="list")));
+ if(t==="list")search();if(t==="cfg")loadCfg();if(t==="log")loadLog();if(t==="usr")loadUsers();if(t==="tpl")openTpl();if(t==="cat")loadCatsTab();if(t==="brd")loadBrd();if(t==="red")loadDl()}
 document.querySelector("nav").onclick=e=>{if(e.target.dataset.t){say("");show(e.target.dataset.t)}};
 // ---- vouchers: list, edit, void, delete, print (admin) ----
 function search(){return run(async()=>{const n=$("q").value.trim(),c=$("fc").value;let docs;
@@ -215,9 +226,13 @@ $("rows").onclick=e=>{const d=e.target.dataset;
 $("ecn").onclick=()=>show("list");
 $("esv").onclick=()=>run(async()=>{const s=form("e");await db.runTransaction(async tx=>{const c=await tx.get(V(editId));need(c.exists&&c.data().status!=="deleted","Voucher not found.");
  tx.update(V(editId),Object.assign({},s,{modifiedAt:ts(),modifiedBy:me}));audit(tx,{type:"voucher_edited",number:editId})});say("Voucher saved.");show("list")});
-$("prt").onclick=()=>{const sel=Array.from(document.querySelectorAll("#rows input:checked")).map(c=>cache[c.dataset.i]);if(!sel.length)return say("Select at least one voucher to print.",true);
+const stdPrint=()=>{const sel=Array.from(document.querySelectorAll("#rows input:checked")).map(c=>cache[c.dataset.i]);if(!sel.length)return say("Select at least one voucher to print.",true);
  $("print").innerHTML=sel.map(v=>{const qr=qrcode(0,"M");qr.addData(qrUrl(v));qr.make();
  return `<div class="v"><div>${brandBlock()}<h3>${esc(v.voucherNumber)}</h3><div>${catName(v.category)}</div>${v.title?`<div>${esc(v.title)}</div>`:""}<div>Valid ${esc(v.startDate)} to ${esc(v.endDate)}</div>${$("showR").checked&&(v.recipientName||v.contactNumber)?`<div>${esc(v.recipientName)} ${esc(v.contactNumber)}</div>`:""}</div>${qr.createSvgTag(3,0)}</div>`}).join("");print()};
+$("prt").onclick=()=>run(async()=>{const tid=$("ptp").value,t=tid&&tpls[tid];if(!t)return stdPrint();
+ const sel=Array.from(document.querySelectorAll("#rows input:checked")).map(c=>cache[c.dataset.i]);need(sel.length,"Select at least one voucher to print.");
+ const one=$("pone").checked,T=cloneT(t,tid);try{localStorage.setItem("vtpl",tid)}catch(e){}
+ $("print").innerHTML=(one?`<style>@page{size:${T.w}mm ${T.h}mm;margin:0}</style>`:"")+sel.map(v=>`<div style="${one?"page-break-after:always":"margin:0 0 4mm"}">${tplHtml(T,v,null)}</div>`).join("");print()});
 // ---- QR-only export (admin): one file per voucher, named by voucher number ----
 function qrUrl(v){need(/^https?:$/.test(location.protocol),"Open the app from its https address first. QR codes made from a local file would not link to the app.");return location.origin+location.pathname+"?q="+v.qrId}
 function qrObj(v){const q=qrcode(0,"M");q.addData(qrUrl(v));q.make();return q}
@@ -342,6 +357,85 @@ $("impgo").onclick=()=>run(async()=>{need(isMgr()&&imp&&imp.items.length,"Choose
  await aud({type:mode==="create"?"vouchers_imported":"vouchers_bulk_updated",number:done+" saved"+(bad.length?", "+bad.length+" failed":"")});
  $("impres").innerHTML=`<div class="msg ${bad.length?"err":""}">${done} voucher(s) ${mode==="create"?"created":"updated"}${bad.length?". These could not be saved: "+esc(bad.slice(0,20).join(", "))+(bad.length>20?"…":"")+". Choose the file again to retry; vouchers already saved are skipped.":"."}</div>`;
  $("impdl").hidden=!lastRows.length;imp=null;impText="";$("impf").value="";$("impplan").innerHTML="";$("imprej").hidden=true});
+// ---- design templates (admin + supervisor): artwork, drag-and-drop fields, text formatting ----
+const FONTS=[["Arial","Arial, Helvetica, sans-serif"],["Verdana","Verdana, Geneva, sans-serif"],["Trebuchet MS","'Trebuchet MS', sans-serif"],["Tahoma","Tahoma, sans-serif"],["Georgia","Georgia, serif"],["Times New Roman","'Times New Roman', Times, serif"],["Palatino","'Palatino Linotype', Palatino, serif"],["Courier New","'Courier New', monospace"],["Impact","Impact, 'Arial Black', sans-serif"],["Brush Script","'Brush Script MT', cursive"],["Inter","Inter, sans-serif"],["Fraunces","Fraunces, serif"]];
+const FDEF=[["company","Company name"],["voucherNumber","Voucher number"],["category","Category"],["title","Title or description"],["validity","Validity dates"],["startDate","Start date"],["endDate","End date"],["recipientName","Recipient name"],["contactNumber","Contact number"],["remarks","Remarks"],["qr","QR code"]];
+const DFLT={company:{on:1,x:6,y:5,w:60,size:12,bold:1},voucherNumber:{on:1,x:6,y:18,w:55,size:30,bold:1},category:{on:1,x:6,y:38,w:55,size:14},title:{on:1,x:6,y:48,w:60,size:13},validity:{on:1,x:6,y:62,w:60,size:11,prefix:"Valid: "},startDate:{on:0,x:6,y:70,w:30,size:10,prefix:"From: "},endDate:{on:0,x:40,y:70,w:30,size:10,prefix:"To: "},recipientName:{on:0,x:6,y:76,w:60,size:11,prefix:"Name: "},contactNumber:{on:0,x:6,y:84,w:40,size:10,prefix:"Contact: "},remarks:{on:0,x:6,y:90,w:60,size:9},qr:{on:1,x:70,y:20,size:30}};
+const defField=k=>Object.assign({key:k,on:0,x:6,y:6,w:50,size:12,font:FONTS[0][1],color:"#222222",bold:0,italic:0,align:"left",prefix:""},DFLT[k]);
+const newTpl=()=>({id:null,name:"New template",w:180,h:80,bgc:"#ffffff",bg:"",fields:FDEF.map(d=>defField(d[0]))});
+const okImg=s=>typeof s==="string"&&s.length<=950000&&/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+\/=]+$/.test(s);
+const sampleV=()=>({sample:true,voucherNumber:"6126",category:Object.keys(cats)[0]||"PAID",title:"Sample title",startDate:"2026-11-01",endDate:"2026-12-31",recipientName:"Sample Person",contactNumber:"+974 0000 0000",remarks:"Sample remarks"});
+const fval=(k,v)=>k==="category"?catName(v.category):k==="validity"?(v.startDate+" to "+v.endDate):k==="company"?(v.sample?(brand.name||"Company name"):(brand.name||"")):(v[k]==null?"":String(v[k]));
+function qrInline(txt){const q=qrcode(0,"M");q.addData(txt);q.make();const n=q.getModuleCount(),m=2,N=n+2*m;let p="";
+ for(let r=0;r<n;r++)for(let c=0;c<n;c++)if(q.isDark(r,c))p+="M"+(c+m)+" "+(r+m)+"h1v1h-1z";
+ return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${N} ${N}" style="width:100%;height:100%;display:block" shape-rendering="crispEdges"><rect width="${N}" height="${N}" fill="#fff"/><path d="${p}" fill="#000"/></svg>`}
+// k = pixels per mm for the on-screen designer; null = real size (mm / pt) for printing
+function tplHtml(t,v,k){const sz=p=>k?(p*0.352778*k).toFixed(2)+"px":p+"pt",mm=n=>k?(n*k).toFixed(2)+"px":n+"mm";
+ let o=`<div class="tv" style="position:relative;overflow:hidden;width:${mm(t.w)};height:${mm(t.h)};background:${esc(t.bgc||"#fff")};-webkit-print-color-adjust:exact;print-color-adjust:exact">`;
+ if(okImg(t.bg))o+=`<img src="${t.bg}" alt="" style="position:absolute;left:0;top:0;width:100%;height:100%">`;
+ (t.fields||[]).forEach(f=>{if(!f.on)return;
+  if(f.key==="qr"){o+=`<div data-k="qr" style="position:absolute;left:${f.x}%;top:${f.y}%;width:${mm(f.size)};height:${mm(f.size)}">${qrInline(v.sample?"https://example.com/?q=sample":qrUrl(v))}</div>`;return}
+  const val=fval(f.key,v);if(!val)return;
+  o+=`<div data-k="${f.key}" dir="auto" style="position:absolute;left:${f.x}%;top:${f.y}%;width:${f.w}%;font-family:${esc(f.font)};font-size:${sz(f.size)};font-weight:${f.bold?700:400};font-style:${f.italic?"italic":"normal"};color:${esc(f.color)};text-align:${f.align};line-height:1.15;white-space:pre-wrap;word-break:break-word">${esc((f.prefix||"")+val)}</div>`});
+ return o+"</div>"}
+// ---- end template renderer ----
+let tpls={},cur=null,selKey="voucherNumber",drag=null;
+const fld=k=>cur&&cur.fields.find(f=>f.key===k);
+const lblOf=k=>(FDEF.find(d=>d[0]===k)||[0,k])[1];
+const normT=c=>{FDEF.forEach(d=>{if(!c.fields.some(f=>f.key===d[0]))c.fields.push(defField(d[0]))});return c};
+const cloneT=(t,id)=>normT(Object.assign(JSON.parse(JSON.stringify({name:t.name,w:t.w,h:t.h,bgc:t.bgc||"#ffffff",bg:t.bg||"",fields:t.fields||[]})),{id:id}));
+async function loadTpls(){const s=await db.collection("vtemplates").get();tpls={};s.docs.forEach(d=>{tpls[d.id]=d.data()});fillTpls()}
+function fillTpls(){const ids=Object.keys(tpls).sort((a,b)=>String(tpls[a].name).localeCompare(String(tpls[b].name)));
+ const opts=ids.map(id=>`<option value="${esc(id)}">${esc(tpls[id].name)}</option>`).join(""),p=$("ptp");let pv=p.value;
+ if(!pv){try{pv=localStorage.getItem("vtpl")||""}catch(e){}}
+ p.innerHTML='<option value="">Standard layout</option>'+opts;if(tpls[pv])p.value=pv;
+ $("tsel").innerHTML=(cur&&!cur.id?'<option value="__new">New template (unsaved)</option>':"")+opts;$("tsel").value=cur&&cur.id?cur.id:(cur?"__new":(ids[0]||""))}
+function syncT(){$("tn").value=cur.name;$("tw").value=cur.w;$("th").value=cur.h;$("tbc").value=cur.bgc||"#ffffff"}
+function drawT(){if(!cur)return;const w=$("tstage").clientWidth||600;$("tdc").innerHTML=tplHtml(cur,sampleV(),w/cur.w);
+ const el=$("tdc").querySelector('[data-k="'+selKey+'"]');if(el)el.classList.add("sel");
+ $("tflds").innerHTML=FDEF.map(d=>{const f=fld(d[0]);return `<label class="ck" style="${selKey===d[0]?"background:#e3eee9;border-radius:6px;padding:2px 4px":""}"><input type="checkbox" data-on="${d[0]}" ${f.on?"checked":""}><span data-pick="${d[0]}" style="cursor:pointer;flex:1">${d[1]}</span></label>`}).join("")}
+function showProps(){const f=fld(selKey);if(!f){$("tprop").innerHTML="<p>Select a field.</p>";return}
+ const sel=(p,list,v)=>`<select data-p="${p}">${list.map(o=>`<option value="${esc(o[1])}" ${o[1]===v?"selected":""}>${esc(o[0])}</option>`).join("")}</select>`;
+ $("tprop").innerHTML=`<p style="margin:0 0 6px"><strong>${lblOf(f.key)}</strong></p>`+(f.key==="qr"?`<label>QR size (mm)</label><input data-p="size" type="number" min="8" max="150" value="${f.size}">`:
+ `<label>Text before the value (optional)</label><input data-p="prefix" maxlength="40" value="${esc(f.prefix)}">
+  <label>Font</label>${sel("font",FONTS,f.font)}
+  <div class="row"><div><label>Size (pt)</label><input data-p="size" type="number" min="4" max="120" step="0.5" value="${f.size}"></div><div><label>Box width (%)</label><input data-p="w" type="number" min="5" max="100" value="${f.w}"></div></div>
+  <label>Colour</label><input data-p="color" type="color" value="${esc(f.color)}">
+  <label>Align</label>${sel("align",[["Left","left"],["Centre","center"],["Right","right"]],f.align)}
+  <label class="ck"><input type="checkbox" data-p="bold" ${f.bold?"checked":""}> Bold</label><label class="ck"><input type="checkbox" data-p="italic" ${f.italic?"checked":""}> Italic</label>`)}
+function openTpl(){return run(async()=>{need(isMgr(),"Not allowed.");await loadTpls();const ids=Object.keys(tpls);
+ if(!cur||(cur.id&&!tpls[cur.id]))cur=ids.length?cloneT(tpls[$("tsel").value]||tpls[ids[0]],$("tsel").value&&tpls[$("tsel").value]?$("tsel").value:ids[0]):newTpl();
+ fillTpls();syncT();drawT();showProps()})}
+$("tsel").onchange=()=>{const v=$("tsel").value;if(v==="__new"||!tpls[v])return;cur=cloneT(tpls[v],v);selKey="voucherNumber";fillTpls();syncT();drawT();showProps()};
+$("tnew").onclick=()=>{cur=newTpl();selKey="voucherNumber";fillTpls();syncT();drawT();showProps()};
+$("tdup").onclick=()=>{if(!cur)return;cur=cloneT(cur,null);cur.name=($("tn").value||cur.name)+" (copy)";fillTpls();syncT();drawT()};
+$("tdel").onclick=()=>run(async()=>{need(isMgr()&&cur,"Not allowed.");
+ if(!cur.id){cur=null;return openTpl()}
+ if(!confirm('Delete the template "'+cur.name+'"? Vouchers are not affected.'))return;
+ await db.collection("vtemplates").doc(cur.id).delete();await aud({type:"template_deleted",number:cur.name});cur=null;await openTpl()});
+$("ted").addEventListener("input",e=>{if(!cur)return;const id=e.target.id;
+ if(id==="tn")cur.name=e.target.value;else if(id==="tw"){cur.w=+e.target.value||cur.w;drawT()}else if(id==="th"){cur.h=+e.target.value||cur.h;drawT()}else if(id==="tbc"){cur.bgc=e.target.value;drawT()}});
+$("tprop").oninput=e=>{const p=e.target.dataset.p,f=fld(selKey);if(!p||!f)return;const t=e.target;f[p]=t.type==="checkbox"?(t.checked?1:0):t.type==="number"?(+t.value||0):t.value;drawT()};
+$("tflds").onclick=e=>{const d=e.target.dataset;if(d.on){fld(d.on).on=e.target.checked?1:0;selKey=d.on;showProps();drawT()}else if(d.pick){selKey=d.pick;showProps();drawT()}};
+$("tdc").onpointerdown=e=>{const el=e.target.closest("[data-k]");if(!el||!cur)return;selKey=el.dataset.k;const f=fld(selKey),r=$("tdc").firstChild.getBoundingClientRect();
+ drag={f:f,el:el,sx:e.clientX,sy:e.clientY,x0:f.x,y0:f.y,r:r};try{el.setPointerCapture(e.pointerId)}catch(x){}e.preventDefault();showProps()};
+$("tdc").onpointermove=e=>{if(!drag)return;const c=n=>Math.max(0,Math.min(100,n));
+ drag.f.x=Math.round(c(drag.x0+(e.clientX-drag.sx)/drag.r.width*100)*10)/10;drag.f.y=Math.round(c(drag.y0+(e.clientY-drag.sy)/drag.r.height*100)*10)/10;drag.el.style.left=drag.f.x+"%";drag.el.style.top=drag.f.y+"%"};
+$("tdc").onpointerup=$("tdc").onpointercancel=()=>{if(drag){drag=null;drawT()}};
+window.addEventListener("resize",()=>{if(!$("tpl").hidden)drawT()});
+$("tbg").onchange=()=>run(async()=>{const f=$("tbg").files[0];if(!f||!cur)return;need(/^image\//.test(f.type),"Choose an image file (JPG, PNG or WebP).");need(f.size<=15e6,"That image is too large (max 15 MB).");
+ const url=URL.createObjectURL(f),img=new Image();await new Promise((ok,no)=>{img.onload=ok;img.onerror=()=>no(new Error("Could not read that image."));img.src=url});
+ let m=Math.min(1,1800/Math.max(img.width,img.height)),q=.88,out="";
+ for(let i=0;i<8;i++){const c=document.createElement("canvas");c.width=Math.max(1,Math.round(img.width*m));c.height=Math.max(1,Math.round(img.height*m));const x=c.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,c.width,c.height);x.drawImage(img,0,0,c.width,c.height);
+  out=c.toDataURL("image/jpeg",q);if(out.length<=850000)break;q=Math.max(.5,q-.1);m*=.85}
+ URL.revokeObjectURL(url);need(out.length<=850000,"That image is too detailed to store. Try a smaller or simpler image.");
+ cur.bg=out;cur.h=Math.round(cur.w*img.height/img.width*10)/10;$("th").value=cur.h;$("tbg").value="";drawT();say("Artwork added. The height was set to match the image; change it if you need a different shape.")});
+$("tbgx").onclick=()=>{if(cur){cur.bg="";drawT()}};
+$("tsave").onclick=()=>run(async()=>{need(isMgr(),"Not allowed.");need(cur,"Nothing to save.");const name=$("tn").value.trim();need(name&&name.length<=80,"Enter a template name (up to 80 characters).");
+ need(cur.w>=20&&cur.w<=500&&cur.h>=20&&cur.h<=500,"Width and height must be between 20 and 500 mm.");
+ const id=cur.id||"T"+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
+ await db.collection("vtemplates").doc(id).set({name:name,w:cur.w,h:cur.h,bgc:cur.bgc||"#ffffff",bg:cur.bg||"",fields:cur.fields,updatedBy:me,updatedAt:ts()});
+ await aud({type:"template_saved",number:name});cur.id=id;cur.name=name;await loadTpls();say("Template saved. Choose it from the Print layout list on the Vouchers tab.")});
 // ---- generate ----
 async function getCfg(){const s=await CFG().get();need(s.exists,"Numbering is not set up yet. Open Numbering first.");return s.data()}
 async function pick(c,qty){const seqs=[];let n=c.nextNumber; // skips numbers already used (e.g. entered manually or deleted)
@@ -417,13 +511,14 @@ $("bsv").onclick=()=>run(async()=>{need(isAdmin(),"Admins only.");const name=$("
  const logo=newLogo===null?(brand.logo||""):newLogo;await db.collection("vbrand").doc("main").set({name:name,logo:logo,updatedBy:me,updatedAt:ts()});
  brand={name:name,logo:logo};applyBrand();await aud({type:"branding_changed",number:name||"(no name)"});newLogo=null;say("Branding saved.")});
 // ---- backup & restore (admin) ----
-const COLS=[["vcfg","Numbering"],["vbrand","Branding"],["vcats","Categories"],["vusers","Users"],["vouchers","Vouchers"],["vaudit","Audit log"]];
+const COLS=[["vcfg","Numbering"],["vbrand","Branding"],["vcats","Categories"],["vusers","Users"],["vtemplates","Design templates"],["vouchers","Vouchers"],["vaudit","Audit log"]];
 const ser=x=>{if(x&&typeof x.toMillis==="function")return{__ts:x.toMillis()};if(Array.isArray(x))return x.map(ser);if(x&&typeof x==="object"){const o={};for(const k in x)o[k]=ser(x[k]);return o}return x};
 const de=x=>{if(x&&typeof x==="object"){if(Array.isArray(x))return x.map(de);if(Object.keys(x).length===1&&typeof x.__ts==="number")return firebase.firestore.Timestamp.fromMillis(x.__ts);const o={};for(const k in x)o[k]=de(x[k]);return o}return x};
 const okDoc={
  vouchers:(id,d)=>/^[A-Za-z0-9._-]{1,60}$/.test(id)&&d.voucherNumber===id&&/^[A-Za-z0-9_-]{1,40}$/.test(d.category||"")&&typeof d.startDate==="string"&&typeof d.endDate==="string"&&d.endDate>=d.startDate&&["active","redeemed","voided","deleted"].includes(d.status)&&typeof d.qrId==="string"&&d.qrId.length>=20,
  vusers:(id,d)=>typeof d.name==="string"&&typeof d.hash==="string"&&["admin","supervisor","user"].includes(d.role||"admin"),
  vcats:(id,d)=>/^[A-Za-z0-9_-]{1,40}$/.test(id)&&typeof d.name==="string"&&d.name.length>=1&&d.name.length<=60,
+ vtemplates:(id,d)=>/^[A-Za-z0-9_-]{1,40}$/.test(id)&&typeof d.name==="string"&&Array.isArray(d.fields),
  vbrand:(id,d)=>id==="main"&&typeof d.name==="string"&&typeof d.logo==="string"&&d.logo.length<=300000,
  vaudit:(id,d)=>typeof d.type==="string"&&!!d.at&&typeof d.at.__ts==="number"};
 let plan=null;
@@ -445,13 +540,13 @@ $("bkf").onchange=()=>run(async()=>{plan=null;$("bkgo").disabled=true;$("bkplan"
   if(c==="vbrand"&&ex.has("main")){const cur=(await db.collection("vbrand").doc("main").get()).data()||{};if(!cur.name&&!cur.logo)ex.delete("main")} // empty branding (e.g. after a reset) can be restored
   Object.keys(src).forEach(id=>{if(ex.has(id))skip++;else if(okDoc[c](id,src[id]))add.push([id,src[id]]);else bad++});
   P[c]={total:Object.keys(src).length,add:add,skip:skip,bad:bad}}
- plan=P;const todo=P.vcfg.add.length+P.vbrand.add.length+P.vcats.add.length+P.vusers.add.length+P.vouchers.add.length+P.vaudit.add.length;
+ plan=P;const todo=P.vcfg.add.length+P.vbrand.add.length+P.vcats.add.length+P.vtemplates.add.length+P.vusers.add.length+P.vouchers.add.length+P.vaudit.add.length;
  $("bkplan").innerHTML=`<p>Backup made ${esc(data.createdAt||"")} by ${esc(data.createdBy||"")}.</p><table><thead><tr><th>Data</th><th>In file</th><th>Will be added</th><th>Already present</th><th>Rejected</th></tr></thead><tbody>${COLS.map(c=>`<tr><td>${c[1]}</td><td>${P[c[0]].total}</td><td>${P[c[0]].add.length}</td><td>${P[c[0]].skip}</td><td>${P[c[0]].bad}</td></tr>`).join("")}</tbody></table>${todo?"":'<p class="msg">Nothing to restore: everything in this file is already present.</p>'}`;
  $("bkgo").disabled=!todo});
 $("bkgo").onclick=()=>run(async()=>{need(isAdmin()&&plan,"Choose a backup file first.");
  if(!confirm("Restore the missing records from this backup? Existing records are not changed."))return;
  $("bkgo").disabled=true;let added=0,failed=0;const P=plan,prog=$("bkprog");
- for(const c of ["vbrand","vcats","vusers","vouchers","vaudit"]){const items=P[c].add;
+ for(const c of ["vbrand","vcats","vtemplates","vusers","vouchers","vaudit"]){const items=P[c].add;
   for(let i=0;i<items.length;i+=400){const part=items.slice(i,i+400),b=db.batch();
    part.forEach(([id,d])=>{const x=de(d);if(c!=="vusers")x.restoredAt=ts();b.set(db.collection(c).doc(id),x)});
    try{await b.commit();added+=part.length}catch(e){failed+=part.length}
@@ -473,6 +568,7 @@ $("rsrev").onclick=()=>run(async()=>{need(isAdmin(),"Admins only.");const sel=rs
  if(sel.includes("u"))L.push(`<li><strong>${(await idsOf("vusers")).filter(i=>i!==U(me).id).length}</strong> other user(s) will be deleted. You stay signed in.</li>`);
  if(sel.includes("c")){if(!sel.includes("v"))need((await db.collection("vouchers").limit(1).get()).empty,"Vouchers still use the current categories. Tick Voucher records as well, or leave Categories alone.");L.push("<li>Categories go back to Paid Voucher and Complimentary Voucher.</li>")}
  if(sel.includes("b"))L.push("<li>The company name and logo are cleared.</li>");
+ if(sel.includes("t"))L.push(`<li><strong>${(await idsOf("vtemplates")).length}</strong> design template(s) will be deleted.</li>`);
  $("rsplan").innerHTML="<p>You are about to reset:</p><ul>"+L.join("")+"</ul>";$("rsconf").hidden=false});
 $("rsgo").onclick=()=>run(async()=>{need(isAdmin(),"Admins only.");const sel=rsSel();need(sel.length,"Tick at least one item.");need($("rstxt").value.trim()==="RESET","Type RESET to confirm.");
  const us=await U(me).get();need(us.exists&&us.data().hash===await hp(me,$("rspin").value),"Your PIN is wrong.");
@@ -485,6 +581,7 @@ $("rsgo").onclick=()=>run(async()=>{need(isAdmin(),"Admins only.");const sel=rsS
   if(sel.includes("n")){const c=await CFG().get();need(c.exists,"The number counter isn't set up.");await CFG().update({nextNumber:c.data().startNumber});did.push("number counter")}
   if(sel.includes("u")){const ids=(await idsOf("vusers")).filter(i=>i!==U(me).id);await delIds("vusers",ids,n=>prog("Deleting users… "+n+" of "+ids.length));did.push("users ("+ids.length+")")}
   if(sel.includes("c")){const ids=(await idsOf("vcats")).filter(i=>!DEF_CATS[i]);await delIds("vcats",ids,()=>{});const b=db.batch();Object.keys(DEF_CATS).forEach((id,i)=>b.set(db.collection("vcats").doc(id),{name:DEF_CATS[id],order:i+1}));await b.commit();did.push("categories")}
+  if(sel.includes("t")){const ids=await idsOf("vtemplates");await delIds("vtemplates",ids,()=>{});tpls={};cur=null;fillTpls();did.push("design templates ("+ids.length+")")}
   if(sel.includes("b")){await db.collection("vbrand").doc("main").set({name:"",logo:"",updatedBy:me,updatedAt:ts()});brand={name:"",logo:""};applyBrand();did.push("branding")}
  }catch(e){err=e}
  try{await win.delete()}catch(e){}
