@@ -29,7 +29,7 @@ table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:8px;bord
 @media print{body>*:not(#print){display:none!important}#print{display:block}}
 
 nav{display:flex;flex-wrap:wrap}video{width:100%;max-width:420px;border-radius:8px;background:#000}
-.btn.sm{padding:5px 10px;font-size:13px}.ck{display:flex;gap:8px;align-items:flex-start;font-weight:500;color:var(--ink);font-size:15px;margin:8px 0}.ck input{width:auto;margin-top:3px}.grp{border:1px solid var(--line);border-radius:8px;padding:10px 14px;margin:12px 0}.grp h3{margin:0 0 4px;font-size:15px}.grp .bar{margin:6px 0 2px}.tgrid{display:grid;grid-template-columns:minmax(0,1fr) 290px;gap:16px;margin:14px 0}@media(max-width:820px){.tgrid{grid-template-columns:1fr}}#tdc{position:relative;width:100%;touch-action:none}#tdc .tv{box-shadow:0 0 0 1px var(--line)}#tdc [data-k]{cursor:move;touch-action:none;outline:1px dashed rgba(0,0,0,.3)}#tdc .sel{outline:2px solid var(--forest)}.tv{break-inside:avoid}.btn.dng{background:none;color:var(--brick);border:1px solid rgba(174,69,48,.4)}
+.btn.sm{padding:5px 10px;font-size:13px}.ck{display:flex;gap:8px;align-items:flex-start;font-weight:500;color:var(--ink);font-size:15px;margin:8px 0}.ck input{width:auto;margin-top:3px}.modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:16px;z-index:50}.modal .card{max-width:580px;width:100%;max-height:92vh;overflow:auto}.grp{border:1px solid var(--line);border-radius:8px;padding:10px 14px;margin:12px 0}.grp h3{margin:0 0 4px;font-size:15px}.grp .bar{margin:6px 0 2px}.tgrid{display:grid;grid-template-columns:minmax(0,1fr) 290px;gap:16px;margin:14px 0}@media(max-width:820px){.tgrid{grid-template-columns:1fr}}#tdc{position:relative;width:100%;touch-action:none}#tdc .tv{box-shadow:0 0 0 1px var(--line)}#tdc [data-k]{cursor:move;touch-action:none;outline:1px dashed rgba(0,0,0,.3)}#tdc .sel{outline:2px solid var(--forest)}.tv{break-inside:avoid}.btn.dng{background:none;color:var(--brick);border:1px solid rgba(174,69,48,.4)}
 </style></head><body>
 
 <div id="login"><div class="card"><div class="brand" id="lbrand"></div>
@@ -55,7 +55,8 @@ nav{display:flex;flex-wrap:wrap}video{width:100%;max-width:420px;border-radius:8
 <div class="grp"><h3>Export designed vouchers as files (exact template size)</h3><p style="color:var(--soft);margin:0">Uses the design template chosen above. One file per voucher, named by voucher number; several come in one ZIP.</p>
 <div class="bar"><div><label>File format</label><select id="dfmt"><option value="pdf">PDF</option><option value="png">PNG</option><option value="jpg">JPG</option><option value="svg">SVG</option></select></div>
 <div><label>Resolution (PDF, PNG, JPG)</label><select id="ddpi"><option value="150">150 dpi</option><option value="300" selected>300 dpi</option><option value="600">600 dpi</option></select></div>
-<button class="btn" id="ddl">Download designed vouchers</button></div></div>
+<button class="btn" id="ddl">Download designed vouchers</button></div>
+<div class="bar"><button class="btn g" id="dwa">Send to WhatsApp…</button><span style="color:var(--soft);font-size:13px;align-self:center">Prepares the exact-size artwork and opens the recipient's WhatsApp chat (uses each voucher's contact number).</span></div></div>
 <div class="grp"><h3>QR codes only (to place in your own artwork)</h3><div class="bar"><div><label>File format</label><select id="qf"><option value="pdf">PDF (vector)</option><option value="svg">SVG (vector)</option><option value="png">PNG (300 dpi)</option><option value="jpg">JPG (300 dpi)</option></select></div>
 <div><label>QR size (mm)</label><input id="qs" type="number" min="10" max="200" value="30" style="width:90px"></div><button class="btn" id="qdl">Download QR codes</button></div></div>
 <div class="grp"><h3>QR links as a spreadsheet (CSV)</h3><p style="color:var(--soft);margin:0">Uses the ticked vouchers. If none are ticked, fill in a number range, or leave both empty for all vouchers.</p>
@@ -121,6 +122,8 @@ nav{display:flex;flex-wrap:wrap}video{width:100%;max-width:420px;border-radius:8
 <div class="card" id="brd" hidden><h2>Branding</h2>
 <p>Your company name and logo appear on the sign-in page, the top bar, printed vouchers and printed reports.</p>
 <label>Company name</label><input id="bn" maxlength="100" autocomplete="off">
+<label>Default country code for WhatsApp numbers (digits only, optional)</label><input id="bcc" inputmode="numeric" maxlength="5" placeholder="e.g. 974" autocomplete="off">
+<label>WhatsApp message (you can use {name}, {number}, {company}, {valid})</label><textarea id="bwm" rows="2" maxlength="300" placeholder="Hello {name}, here is your voucher {number} from {company}. Valid {valid}."></textarea>
 <label>Logo (optional: PNG, JPG or WebP; it is resized automatically)</label><input id="bl" type="file" accept="image/png,image/jpeg,image/webp">
 <div id="bprev" style="margin:12px 0"></div>
 <div class="bar"><button class="btn" id="bsv">Save branding</button><button class="btn g" id="brm">Remove logo</button></div></div>
@@ -162,7 +165,11 @@ nav{display:flex;flex-wrap:wrap}video{width:100%;max-width:420px;border-radius:8
 <button class="btn" id="rl">Look up</button><button class="btn g" id="sc">Scan QR code</button></div>
 <div id="cam" hidden><video id="vid" playsinline muted></video><p><button class="btn sm" id="scn" hidden>Scan next voucher</button> <button class="btn g sm" id="scs">Stop camera</button></p></div>
 <div id="sres"></div></div>
-</main></div><div id="print"></div>
+</main></div><div class="modal" id="wam" hidden><div class="card"><h2>Send to WhatsApp</h2><p id="wahead" style="color:var(--soft);margin-top:4px"></p>
+<img id="wap" alt="Voucher preview" style="max-width:100%;border:1px solid var(--line)"><label>Message (you can edit it)</label><textarea id="watxt" rows="3"></textarea><div id="wamsg" style="margin-top:8px"></div>
+<div class="bar"><button class="btn" id="wago">Copy image &amp; open WhatsApp</button><button class="btn g" id="washare">Share image…</button><button class="btn g" id="wadl">Download image</button></div>
+<div class="bar"><button class="btn g sm" id="waprev">← Previous</button><button class="btn g sm" id="wanext">Next →</button><button class="btn g sm" id="waclose">Close</button></div></div></div>
+<div id="print"></div>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
@@ -503,6 +510,37 @@ $("ddl").onclick=()=>run(async()=>{need(isMgr(),"Not allowed.");const tid=$("ptp
   saveBlob(await z.generateAsync({type:"blob"}),"designed-vouchers-"+sel[0].voucherNumber+"-to-"+sel[sel.length-1].voucherNumber+"-"+f+".zip")}
  await aud({type:"designs_exported",number:sel.length+" × "+f.toUpperCase()});
  say(sel.length+" voucher(s) exported as "+f.toUpperCase()+" at exactly "+T.w+" × "+T.h+" mm"+(f==="svg"?"":" ("+dpi+" dpi)")+(sel.length>1?", one file per voucher inside a ZIP, named by voucher number.":"."))});
+// ---- send to WhatsApp (admin + supervisor): exact-size artwork + a chat with a ready message ----
+const DEF_WA="Hello {name}, here is your voucher {number} from {company}. Valid {valid}.";
+let wa={list:[],i:0,T:null,bg:null,blob:null,url:""};
+function waNumber(raw){const s=String(raw||"").trim();if(!s)return null;let d=s.replace(/\D/g,"");const intl=s.startsWith("+")||s.startsWith("00");
+ if(s.startsWith("00"))d=d.slice(2);if(intl)return d.length>=8&&d.length<=15?d:null;
+ const cc=String(brand.countryCode||"").replace(/\D/g,"");if(!cc)return null;d=d.replace(/^0+/,"");if(!(d.startsWith(cc)&&d.length>=cc.length+7))d=cc+d;return d.length>=8&&d.length<=15?d:null}
+const waText=v=>(brand.name?(brand.waMsg||DEF_WA):(brand.waMsg||DEF_WA).replace(/\s*from \{company\}/g,"")).replace(/\{name\}/g,v.recipientName||"").replace(/\{number\}/g,v.voucherNumber).replace(/\{company\}/g,brand.name||"").replace(/\{valid\}/g,fd(v.startDate)+" to "+fd(v.endDate)).replace(/\s+([,.])/g,"$1").replace(/\s+/g," ").trim();
+async function waLoad(){const v=wa.list[wa.i];$("wamsg").innerHTML="";$("wago").disabled=true;$("wap").removeAttribute("src");
+ const num=waNumber(v.contactNumber);$("wahead").textContent="Voucher "+v.voucherNumber+" · "+(v.recipientName||"no name")+" · "+(num?"+"+num:v.contactNumber)+"   ("+(wa.i+1)+" of "+wa.list.length+")";
+ $("watxt").value=waText(v);$("waprev").disabled=wa.i===0;$("wanext").disabled=wa.i>=wa.list.length-1;
+ if(!num)$("wamsg").innerHTML='<div class="msg err">This contact number has no country code. Write it like +974 5555 0000, or set a default country code in the Branding tab.</div>';
+ wa.blob=await new Promise(r=>renderCanvas(wa.T,layoutT(wa.T,v),300,wa.bg).toBlob(r,"image/png"));
+ if(wa.url)URL.revokeObjectURL(wa.url);wa.url=URL.createObjectURL(wa.blob);$("wap").src=wa.url;$("wago").disabled=!num}
+$("dwa").onclick=()=>run(async()=>{need(isMgr(),"Not allowed.");const tid=$("ptp").value;need(tid&&tpls[tid],"Choose a design template first (Design template list above).");
+ const sel=Array.from(document.querySelectorAll("#rows input:checked")).map(c=>cache[c.dataset.i]);need(sel.length,"Select at least one voucher first.");
+ const list=sel.filter(v=>String(v.contactNumber||"").trim());need(list.length,"None of the ticked vouchers has a contact number.");
+ wa.T=cloneT(tpls[tid],tid);wa.list=list;wa.i=0;wa.bg=okImg(wa.T.bg)?await loadImg(wa.T.bg):null;
+ try{await Promise.all(wa.T.fields.filter(x=>x.on&&x.key!=="qr").map(x=>document.fonts.load(fontCss(x,16))))}catch(e){}
+ $("wam").hidden=false;await waLoad();if(list.length<sel.length)say((sel.length-list.length)+" ticked voucher(s) have no contact number and were skipped.")});
+$("waprev").onclick=()=>run(async()=>{if(wa.i>0){wa.i--;await waLoad()}});$("wanext").onclick=()=>run(async()=>{if(wa.i<wa.list.length-1){wa.i++;await waLoad()}});
+$("waclose").onclick=()=>{$("wam").hidden=true};
+$("wadl").onclick=()=>{if(wa.blob)saveBlob(wa.blob,wa.list[wa.i].voucherNumber+".png")};
+$("washare").onclick=()=>run(async()=>{const v=wa.list[wa.i],f=new File([wa.blob],v.voucherNumber+".png",{type:"image/png"});
+ need(navigator.canShare&&navigator.canShare({files:[f]}),"This device or browser can't share images directly. Use 'Copy image & open WhatsApp' or 'Download image'.");
+ try{await navigator.share({files:[f],text:$("watxt").value})}catch(e){if(e.name!=="AbortError")throw e}});
+$("wago").onclick=()=>run(async()=>{const v=wa.list[wa.i],num=waNumber(v.contactNumber);need(num&&wa.blob,"This voucher can't be sent yet.");
+ const w=window.open("","_blank");let copied=false; // open the tab first so the browser doesn't block it
+ try{await navigator.clipboard.write([new ClipboardItem({"image/png":wa.blob})]);copied=true}catch(e){}
+ const url="https://wa.me/"+num+"?text="+encodeURIComponent($("watxt").value);if(w)w.location.href=url;else window.location.href=url;
+ await aud({type:"whatsapp_prepared",number:v.voucherNumber});
+ $("wamsg").innerHTML=copied?'<div class="msg">The voucher image is copied. In the WhatsApp chat, paste it (Ctrl+V on a computer; on a phone press and hold the message box, then Paste) and press Send.</div>':'<div class="msg err">The image could not be copied automatically. Press "Download image", then attach it in the WhatsApp chat.</div>'});
 // ---- generate ----
 async function getCfg(){const s=await CFG().get();need(s.exists,"Numbering is not set up yet. Open Numbering first.");return s.data()}
 async function pick(c,qty){const seqs=[];let n=c.nextNumber; // skips numbers already used (e.g. entered manually or deleted)
@@ -567,7 +605,7 @@ const brandBlock=()=>okLogo(brand.logo)||brand.name?`<div class="bh">${okLogo(br
 function applyBrand(){document.title=bName();$("lbrand").innerHTML=brandHtml();$("tbrand").innerHTML=brandHtml()}
 applyBrand();db.collection("vbrand").doc("main").get().then(s=>{if(s.exists){brand=s.data();applyBrand()}}).catch(()=>{});
 const prevBrd=l=>{$("bprev").innerHTML=okLogo(l)?`<img src="${l}" alt="Logo preview" style="max-height:80px;max-width:240px">`:"<em>No logo</em>"};
-function loadBrd(){$("bn").value=brand.name||"";newLogo=null;$("bl").value="";prevBrd(brand.logo)}
+function loadBrd(){$("bn").value=brand.name||"";$("bcc").value=brand.countryCode||"";$("bwm").value=brand.waMsg||"";newLogo=null;$("bl").value="";prevBrd(brand.logo)}
 $("bl").onchange=()=>run(async()=>{const f=$("bl").files[0];if(!f)return;need(/^image\/(png|jpeg|webp)$/.test(f.type),"Choose a PNG, JPG or WebP image.");need(f.size<=5e6,"That image is too large (max 5 MB).");
  const url=URL.createObjectURL(f),img=new Image();await new Promise((ok,no)=>{img.onload=ok;img.onerror=()=>no(new Error("Could not read that image."));img.src=url});
  const k=Math.min(1,400/Math.max(img.width,img.height)),cv2=document.createElement("canvas"),png=f.type==="image/png";cv2.width=Math.max(1,Math.round(img.width*k));cv2.height=Math.max(1,Math.round(img.height*k));
@@ -575,8 +613,8 @@ $("bl").onchange=()=>run(async()=>{const f=$("bl").files[0];if(!f)return;need(/^
  const out=cv2.toDataURL(png?"image/png":"image/jpeg",.85);need(okLogo(out),"That image is still too large after resizing. Try a simpler logo.");newLogo=out;prevBrd(out)});
 $("brm").onclick=()=>{newLogo="";$("bl").value="";prevBrd("")};
 $("bsv").onclick=()=>run(async()=>{need(isAdmin(),"Admins only.");const name=$("bn").value.trim();need(name.length<=100,"The company name is too long (max 100 characters).");
- const logo=newLogo===null?(brand.logo||""):newLogo;await db.collection("vbrand").doc("main").set({name:name,logo:logo,updatedBy:me,updatedAt:ts()});
- brand={name:name,logo:logo};applyBrand();await aud({type:"branding_changed",number:name||"(no name)"});newLogo=null;say("Branding saved.")});
+ const logo=newLogo===null?(brand.logo||""):newLogo,cc=$("bcc").value.replace(/\D/g,"").slice(0,5),wm=$("bwm").value.trim().slice(0,300);await db.collection("vbrand").doc("main").set({name:name,logo:logo,countryCode:cc,waMsg:wm,updatedBy:me,updatedAt:ts()});
+ brand={name:name,logo:logo,countryCode:cc,waMsg:wm};applyBrand();await aud({type:"branding_changed",number:name||"(no name)"});newLogo=null;say("Branding saved.")});
 // ---- backup & restore (admin) ----
 const COLS=[["vcfg","Numbering"],["vbrand","Branding"],["vcats","Categories"],["vusers","Users"],["vtemplates","Design templates"],["vouchers","Vouchers"],["vaudit","Audit log"]];
 const ser=x=>{if(x&&typeof x.toMillis==="function")return{__ts:x.toMillis()};if(Array.isArray(x))return x.map(ser);if(x&&typeof x==="object"){const o={};for(const k in x)o[k]=ser(x[k]);return o}return x};
