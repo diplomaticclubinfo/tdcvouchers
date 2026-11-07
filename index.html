@@ -45,7 +45,7 @@ nav{display:flex;flex-wrap:wrap}video{width:100%;max-width:420px;border-radius:8
 <div class="card" id="list" hidden><div class="bar"><div><label>Find by number</label><input id="q" placeholder="Exact number"></div>
 <div><label>Category</label><select id="fc"><option value="">All</option><option value="PAID">Paid Voucher</option><option value="COMPLIMENTARY">Complimentary Voucher</option></select></div>
 <button class="btn" id="go">Search</button><button class="btn g" id="prt">Print selected</button>
-<div><label>Print layout</label><select id="ptp"><option value="">Standard layout</option></select></div><label class="ck" style="margin:0 0 8px"><input type="checkbox" id="pone"> One per page</label>
+<div><label>Print layout</label><select id="ptp"><option value="">Standard layout</option></select></div><div><label>Page layout (templates)</label><select id="pmode"><option value="sheet">Several per A4 sheet (cut by hand)</option><option value="one">One per page (exact size)</option></select></div><div><label>Space between (mm)</label><input id="pgap" type="number" min="0" max="10" step="0.5" value="2" style="width:90px"></div><label class="ck" style="margin:0 0 8px"><input type="checkbox" id="pcut" checked> Cut guides</label>
 <div><label>QR file type</label><select id="qf"><option value="pdf">PDF (vector)</option><option value="svg">SVG (vector)</option><option value="png">PNG (300 dpi)</option></select></div><div><label>QR size (mm)</label><input id="qs" type="number" min="10" max="200" value="30" style="width:90px"></div><button class="btn g" id="qdl">Download QR codes</button>
 <div><label>QR links CSV: number from</label><input id="lf" placeholder="optional" style="width:110px"></div><div><label>to</label><input id="lt" placeholder="optional" style="width:110px"></div><button class="btn g" id="ldl">Download QR links (CSV)</button><label style="margin:0 0 8px"><input type="checkbox" id="showR" style="width:auto"> Show recipient on print</label></div>
 <table><thead><tr><th><input type="checkbox" id="sel" style="width:auto" aria-label="Select all vouchers"></th><th>Number</th><th>Category</th><th>Valid</th><th>Status</th><th>Recipient</th><th></th></tr></thead><tbody id="rows"></tbody></table></div>
@@ -92,7 +92,7 @@ nav{display:flex;flex-wrap:wrap}video{width:100%;max-width:420px;border-radius:8
 <div class="row"><div><label>What do you want to do?</label><select id="impm"><option value="update">Update existing vouchers (recipient details, titles, remarks…)</option><option value="create">Create new vouchers from the file</option></select></div>
 <div><label>CSV file</label><input id="impf" type="file" accept=".csv,text/csv"></div></div>
 <label id="impcw" style="display:flex;gap:8px;align-items:center;font-weight:500"><input type="checkbox" id="imc" style="width:auto"> Blank cells clear the existing value (otherwise blank cells are ignored)</label>
-<p style="color:var(--soft)">Dates: YYYY-MM-DD, or DD/MM/YYYY (day first). Up to 1,000 rows per import. In Excel, format phone number columns as Text so leading zeros and + signs are kept. Updating only needs a "Voucher number" column plus the columns you want to change; a file exported with Download QR links (CSV) works too.</p>
+<p style="color:var(--soft)">Dates: DD-MM-YYYY (day first; YYYY-MM-DD also works). Up to 1,000 rows per import. In Excel, format phone number columns as Text so leading zeros and + signs are kept. Updating only needs a "Voucher number" column plus the columns you want to change; a file exported with Download QR links (CSV) works too.</p>
 <div class="bar"><button class="btn g sm" id="impt1">Download template: update</button><button class="btn g sm" id="impt2">Download template: create</button></div>
 <div id="impplan"></div><div class="bar"><button class="btn" id="impgo" disabled>Import</button><button class="btn g" id="imprej" hidden>Download rejected rows</button><button class="btn g" id="impdl" hidden>Download these vouchers with QR links (CSV)</button></div><div id="impres"></div>
 <h2 style="margin-top:32px">Export vouchers with QR links</h2>
@@ -178,6 +178,8 @@ const run=async f=>{try{say("");return await f()}catch(e){say(e.code==="permissi
 const DEF_CATS={PAID:"Paid Voucher",COMPLIMENTARY:"Complimentary Voucher"};let cats={};
 const catName=id=>(cats[id]&&cats[id].name)||DEF_CATS[id]||id;
 const today=()=>new Date().toLocaleDateString("en-CA");
+const fd=s=>/^\d{4}-\d{2}-\d{2}$/.test(s||"")?s.slice(8,10)+"-"+s.slice(5,7)+"-"+s.slice(0,4):(s||""); // stored as YYYY-MM-DD, shown as DD-MM-YYYY
+const p2=n=>String(n).padStart(2,"0"),fdt=d=>d&&d.getDate?p2(d.getDate())+"-"+p2(d.getMonth()+1)+"-"+d.getFullYear()+" "+p2(d.getHours())+":"+p2(d.getMinutes()):"";
 const stat=v=>v.status!=="active"?v.status:today()<v.startDate?"not yet valid":today()>v.endDate?"expired":"active";
 const fmt=(c,n)=>c.prefix+(c.digits?String(n).padStart(c.digits,"0"):String(n))+c.suffix;
 const maxN=c=>c.digits?Math.pow(10,c.digits)-1:Number.MAX_SAFE_INTEGER;
@@ -215,7 +217,7 @@ document.querySelector("nav").onclick=e=>{if(e.target.dataset.t){say("");show(e.
 function search(){return run(async()=>{const n=$("q").value.trim(),c=$("fc").value;let docs;
  if(n){const s=await V(n).get();docs=s.exists?[s]:[]}else docs=(await db.collection("vouchers").orderBy("seq","desc").limit(500).get()).docs;
  cache=docs.map(d=>Object.assign({id:d.id},d.data())).filter(v=>v.status!=="deleted"&&(!c||v.category===c));
- $("rows").innerHTML=cache.map((v,i)=>`<tr><td><input type="checkbox" data-i="${i}" style="width:auto" aria-label="Select ${esc(v.voucherNumber)}"></td><td>${esc(v.voucherNumber)}</td><td>${catName(v.category)}</td><td>${esc(v.startDate)} to ${esc(v.endDate)}</td><td><span class="tag ${stat(v).split(" ")[0]}">${stat(v)}</span></td><td>${esc(v.recipientName)}</td><td style="white-space:nowrap"><button class="btn g sm" data-edit="${i}">Edit</button> ${v.status==="active"?`<button class="btn g sm" data-void="${esc(v.id)}">Void</button> `:""}<button class="btn dng sm" data-del="${esc(v.id)}">Delete</button></td></tr>`).join("")||`<tr><td colspan="7">No vouchers found. Generate a series to get started.</td></tr>`})}
+ $("rows").innerHTML=cache.map((v,i)=>`<tr><td><input type="checkbox" data-i="${i}" style="width:auto" aria-label="Select ${esc(v.voucherNumber)}"></td><td>${esc(v.voucherNumber)}</td><td>${catName(v.category)}</td><td>${esc(fd(v.startDate))} to ${esc(fd(v.endDate))}</td><td><span class="tag ${stat(v).split(" ")[0]}">${stat(v)}</span></td><td>${esc(v.recipientName)}</td><td style="white-space:nowrap"><button class="btn g sm" data-edit="${i}">Edit</button> ${v.status==="active"?`<button class="btn g sm" data-void="${esc(v.id)}">Void</button> `:""}<button class="btn dng sm" data-del="${esc(v.id)}">Delete</button></td></tr>`).join("")||`<tr><td colspan="7">No vouchers found. Generate a series to get started.</td></tr>`})}
 $("go").onclick=search;
 const setStatus=(id,st,type)=>db.runTransaction(async tx=>{const s=await tx.get(V(id));need(s.exists&&s.data().status!=="deleted","Voucher not found.");if(st==="voided")need(s.data().status==="active","Only active vouchers can be voided.");
  tx.update(V(id),{status:st,modifiedAt:ts(),modifiedBy:me});audit(tx,{type:type,number:id})});
@@ -228,10 +230,16 @@ $("esv").onclick=()=>run(async()=>{const s=form("e");await db.runTransaction(asy
  tx.update(V(editId),Object.assign({},s,{modifiedAt:ts(),modifiedBy:me}));audit(tx,{type:"voucher_edited",number:editId})});say("Voucher saved.");show("list")});
 const stdPrint=()=>{const sel=Array.from(document.querySelectorAll("#rows input:checked")).map(c=>cache[c.dataset.i]);if(!sel.length)return say("Select at least one voucher to print.",true);
  $("print").innerHTML=sel.map(v=>{const qr=qrcode(0,"M");qr.addData(qrUrl(v));qr.make();
- return `<div class="v"><div>${brandBlock()}<h3>${esc(v.voucherNumber)}</h3><div>${catName(v.category)}</div>${v.title?`<div>${esc(v.title)}</div>`:""}<div>Valid ${esc(v.startDate)} to ${esc(v.endDate)}</div>${$("showR").checked&&(v.recipientName||v.contactNumber)?`<div>${esc(v.recipientName)} ${esc(v.contactNumber)}</div>`:""}</div>${qr.createSvgTag(3,0)}</div>`}).join("");print()};
+ return `<div class="v"><div>${brandBlock()}<h3>${esc(v.voucherNumber)}</h3><div>${catName(v.category)}</div>${v.title?`<div>${esc(v.title)}</div>`:""}<div>Valid ${esc(fd(v.startDate))} to ${esc(fd(v.endDate))}</div>${$("showR").checked&&(v.recipientName||v.contactNumber)?`<div>${esc(v.recipientName)} ${esc(v.contactNumber)}</div>`:""}</div>${qr.createSvgTag(3,0)}</div>`}).join("");print()};
 $("prt").onclick=()=>run(async()=>{const tid=$("ptp").value,t=tid&&tpls[tid];if(!t)return stdPrint();
  const sel=Array.from(document.querySelectorAll("#rows input:checked")).map(c=>cache[c.dataset.i]);need(sel.length,"Select at least one voucher to print.");
- const one=$("pone").checked,T=cloneT(t,tid);try{localStorage.setItem("vtpl",tid)}catch(e){}
+ const one=$("pmode").value==="one",T=cloneT(t,tid);try{localStorage.setItem("vtpl",tid)}catch(e){}
+ if(!one){const gap=Math.max(0,Math.min(10,+$("pgap").value||0)),M=5,cw=T.w+gap,ch=T.h+gap,fit=(W,H)=>({c:Math.floor((W-2*M)/cw),r:Math.floor((H-2*M)/ch)});
+  const pt=fit(210,297),ld=fit(297,210),land=ld.c*ld.r>pt.c*pt.r,W=land?297:210,H=land?210:297,f=land?ld:pt;
+  need(f.c>=1&&f.r>=1,"This template is too big to fit on an A4 sheet. Make it smaller, or choose 'One per page'.");
+  const per=f.c*f.r,ox=(W-f.c*cw)/2,oy=(H-f.r*ch)/2,cut=$("pcut").checked;let html='<style>@page{size:A4 '+(land?"landscape":"portrait")+';margin:0}</style>';
+  for(let i=0;i<sel.length;i+=per){html+=`<div style="position:relative;width:${W}mm;height:${H}mm;overflow:hidden;${i+per<sel.length?"page-break-after:always":""}">`+sel.slice(i,i+per).map((v,j)=>`<div style="position:absolute;left:${(ox+(j%f.c)*cw).toFixed(2)}mm;top:${(oy+Math.floor(j/f.c)*ch).toFixed(2)}mm;width:${cw}mm;height:${ch}mm;box-sizing:border-box;padding:${gap/2}mm;${cut?"outline:0.2mm dashed #888":""}">${tplHtml(T,v,null)}</div>`).join("")+"</div>"}
+  $("print").innerHTML=html;say(sel.length+" voucher(s) on "+Math.ceil(sel.length/per)+" A4 page(s), "+f.c+" × "+f.r+" per page"+(land?" (landscape)":"")+".");print();return}
  $("print").innerHTML=(one?`<style>@page{size:${T.w}mm ${T.h}mm;margin:0}</style>`:"")+sel.map(v=>`<div style="${one?"page-break-after:always":"margin:0 0 4mm"}">${tplHtml(T,v,null)}</div>`).join("");print()});
 // ---- QR-only export (admin): one file per voucher, named by voucher number ----
 function qrUrl(v){need(/^https?:$/.test(location.protocol),"Open the app from its https address first. QR codes made from a local file would not link to the app.");return location.origin+location.pathname+"?q="+v.qrId}
@@ -257,7 +265,7 @@ $("qdl").onclick=()=>run(async()=>{need(isMgr(),"Not allowed.");const sel=Array.
 async function saveLinks(rows){need(rows.length,"No vouchers match.");
  rows=rows.slice().sort((x,y)=>(np(x.voucherNumber)-np(y.voucherNumber))||String(x.voucherNumber).localeCompare(String(y.voucherNumber)));
  const cell=x=>{x=String(x==null?"":x);if(/^[=+\-@]/.test(x))x="'"+x;return '"'+x.replace(/"/g,'""')+'"'};
- const csv="\ufeff"+[["Voucher number","QR link","Category","Start date","End date","Status","Title or description","Recipient name","Contact number","Remarks"]].concat(rows.map(v=>[v.voucherNumber,qrUrl(v),catName(v.category),v.startDate,v.endDate,stat(v),v.title||"",v.recipientName||"",v.contactNumber||"",v.remarks||""])).map(r=>r.map(cell).join(",")).join("\r\n");
+ const csv="\ufeff"+[["Voucher number","QR link","Category","Start date","End date","Status","Title or description","Recipient name","Contact number","Remarks"]].concat(rows.map(v=>[v.voucherNumber,qrUrl(v),catName(v.category),fd(v.startDate),fd(v.endDate),stat(v),v.title||"",v.recipientName||"",v.contactNumber||"",v.remarks||""])).map(r=>r.map(cell).join(",")).join("\r\n");
  saveBlob(new Blob([csv],{type:"text/csv"}),"qr-links-"+rows[0].voucherNumber+"-to-"+rows[rows.length-1].voucherNumber+".csv");
  await aud({type:"qr_links_exported",number:rows.length+" links"});say(rows.length+" voucher(s) exported with their QR links.")}
 $("ldl").onclick=()=>run(async()=>{need(isMgr(),"Not allowed.");
@@ -321,7 +329,7 @@ function analyzeImport(){return run(async()=>{need(isMgr(),"Not allowed.");imp=n
   const d={};
   for(const k of ["title","recipient","contact","remarks"]){const v=get(r,k);if(v===undefined)continue;if(v.length>MAXLEN[k])return no("Too long: "+k+" (max "+MAXLEN[k]+")");if(v!==""||clear||mode==="create")d[FIELD[k]]=v}
   if(mode==="create"){if(exist[n])return no("Voucher number already exists");const c=catId(get(r,"category"));if(!c)return no("Unknown category '"+get(r,"category")+"'");
-   const s=normDate(get(r,"start")),e=normDate(get(r,"end"));if(!s||!e)return no("Start and end dates must be YYYY-MM-DD or DD/MM/YYYY");if(e<s)return no("End date is before the start date");
+   const s=normDate(get(r,"start")),e=normDate(get(r,"end"));if(!s||!e)return no("Start and end dates must be DD-MM-YYYY");if(e<s)return no("End date is before the start date");
    items.push({n:n,data:Object.assign({title:"",recipientName:"",contactNumber:"",remarks:""},d,{category:c,startDate:s,endDate:e}),doc:null});return}
   const ex=exist[n];if(!ex||ex.status==="deleted")return no("Voucher not found");
   if(col.category!==undefined&&get(r,"category")){const c=catId(get(r,"category"));if(!c)return no("Unknown category '"+get(r,"category")+"'");d.category=c}
@@ -333,7 +341,7 @@ function analyzeImport(){return run(async()=>{need(isMgr(),"Not allowed.");imp=n
  imp={mode:mode,items:items,rej:rej,head:rows[0]};
  const nm=x=>mode==="create"?"will be created":"will be updated";
  $("impplan").innerHTML=`<div class="msg"><strong>${items.length}</strong> row(s) ${nm()}${mode==="update"?`, ${same} already up to date`:""}, <strong>${rej.length}</strong> rejected.</div>`+
-  (items.length?`<table><thead><tr><th>Voucher</th><th>${mode==="create"?"Category":"Changes"}</th><th>${mode==="create"?"Valid":""}</th></tr></thead><tbody>${items.slice(0,10).map(it=>`<tr><td>${esc(it.n)}</td><td>${mode==="create"?esc(catName(it.data.category)):esc(Object.keys(it.data).join(", "))}</td><td>${mode==="create"?esc(it.data.startDate+" to "+it.data.endDate):""}</td></tr>`).join("")}</tbody></table>${items.length>10?`<p style="color:var(--soft)">…and ${items.length-10} more</p>`:""}`:"")+
+  (items.length?`<table><thead><tr><th>Voucher</th><th>${mode==="create"?"Category":"Changes"}</th><th>${mode==="create"?"Valid":""}</th></tr></thead><tbody>${items.slice(0,10).map(it=>`<tr><td>${esc(it.n)}</td><td>${mode==="create"?esc(catName(it.data.category)):esc(Object.keys(it.data).join(", "))}</td><td>${mode==="create"?esc(fd(it.data.startDate)+" to "+fd(it.data.endDate)):""}</td></tr>`).join("")}</tbody></table>${items.length>10?`<p style="color:var(--soft)">…and ${items.length-10} more</p>`:""}`:"")+
   (rej.length?`<h3 style="margin-top:16px">Rejected rows</h3><table><tbody>${rej.slice(0,100).map(x=>`<tr><td>Line ${x.line}</td><td>${esc(x.number)}</td><td>${esc(x.reason)}</td></tr>`).join("")}</tbody></table>${rej.length>100?`<p style="color:var(--soft)">…and ${rej.length-100} more (see the downloadable list)</p>`:""}`:"");
  $("impgo").textContent="Import "+items.length+" voucher(s)";$("impgo").disabled=!items.length;$("imprej").hidden=!rej.length})}
 $("xgo").onclick=()=>run(async()=>{need(isMgr(),"Not allowed.");const a=$("xf").value.trim(),b=$("xt").value.trim(),nf=np(a),nt=np(b),cat=$("xc").value,st=$("xs").value;
@@ -344,7 +352,7 @@ $("impdl").onclick=()=>run(async()=>{need(lastRows.length,"Nothing to download."
 $("impf").onchange=async()=>{const f=$("impf").files[0];impText=f?await f.text():"";analyzeImport()};$("impm").onchange=analyzeImport;$("imc").onchange=analyzeImport;
 $("imprej").onclick=()=>{if(!imp||!imp.rej.length)return;saveBlob(new Blob([csvOut([imp.head.concat(["Reason"])].concat(imp.rej.map(x=>x.row.concat([x.reason]))))],{type:"text/csv"}),"import-rejected-rows.csv")};
 $("impt1").onclick=()=>saveBlob(new Blob([csvOut([["Voucher number","QR link (created by the app, ignored on import)","Title or description","Recipient name","Contact number","Remarks"],["6126","","Welcome gift","Sample Person","+97400000000",""]])],{type:"text/csv"}),"template-update-vouchers.csv");
-$("impt2").onclick=()=>saveBlob(new Blob([csvOut([["Voucher number","Category","Start date","End date","Title or description","Recipient name","Contact number","Remarks"],["6126",(cats[Object.keys(cats)[0]]||{name:"Paid Voucher"}).name,"2026-11-01","2026-12-31","Welcome gift","Sample Person","+97400000000",""]])],{type:"text/csv"}),"template-create-vouchers.csv");
+$("impt2").onclick=()=>saveBlob(new Blob([csvOut([["Voucher number","Category","Start date","End date","Title or description","Recipient name","Contact number","Remarks"],["6126",(cats[Object.keys(cats)[0]]||{name:"Paid Voucher"}).name,"01-11-2026","31-12-2026","Welcome gift","Sample Person","+97400000000",""]])],{type:"text/csv"}),"template-create-vouchers.csv");
 $("impgo").onclick=()=>run(async()=>{need(isMgr()&&imp&&imp.items.length,"Choose a file first.");const mode=imp.mode,items=imp.items,verb=mode==="create"?"Create":"Update";
  if(!confirm(verb+" "+items.length+" voucher(s) from this file?"))return;$("impgo").disabled=true;let done=0;const bad=[],okN=new Set();
  if(mode==="create")items.forEach(it=>{it.doc=mk(it.n,null,it.data)});
@@ -365,7 +373,7 @@ const defField=k=>Object.assign({key:k,on:0,x:6,y:6,w:50,size:12,font:FONTS[0][1
 const newTpl=()=>({id:null,name:"New template",w:180,h:80,bgc:"#ffffff",bg:"",fields:FDEF.map(d=>defField(d[0]))});
 const okImg=s=>typeof s==="string"&&s.length<=950000&&/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+\/=]+$/.test(s);
 const sampleV=()=>({sample:true,voucherNumber:"6126",category:Object.keys(cats)[0]||"PAID",title:"Sample title",startDate:"2026-11-01",endDate:"2026-12-31",recipientName:"Sample Person",contactNumber:"+974 0000 0000",remarks:"Sample remarks"});
-const fval=(k,v)=>k==="category"?catName(v.category):k==="validity"?(v.startDate+" to "+v.endDate):k==="company"?(v.sample?(brand.name||"Company name"):(brand.name||"")):(v[k]==null?"":String(v[k]));
+const fval=(k,v)=>k==="category"?catName(v.category):k==="validity"?(fd(v.startDate)+" to "+fd(v.endDate)):(k==="startDate"||k==="endDate")?fd(v[k]):k==="company"?(v.sample?(brand.name||"Company name"):(brand.name||"")):(v[k]==null?"":String(v[k]));
 function qrInline(txt){const q=qrcode(0,"M");q.addData(txt);q.make();const n=q.getModuleCount(),m=2,N=n+2*m;let p="";
  for(let r=0;r<n;r++)for(let c=0;c<n;c++)if(q.isDark(r,c))p+="M"+(c+m)+" "+(r+m)+"h1v1h-1z";
  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${N} ${N}" style="width:100%;height:100%;display:block" shape-rendering="crispEdges"><rect width="${N}" height="${N}" fill="#fff"/><path d="${p}" fill="#000"/></svg>`}
@@ -490,7 +498,7 @@ $("ab").onclick=()=>run(async()=>{const n=$("an").value.trim(),p=$("ap").value,r
  need(!(await U(n).get()).exists,"That name already has an account.");await U(n).set({name:n,hash:await hp(n,p),role:r,created:ts()});await aud({type:"user_added",number:n+" ("+r+")"});
  $("an").value=$("ap").value="";say(n+" can now sign in as "+(r==="admin"?"an admin":r==="supervisor"?"a supervisor":"an end user")+".");loadUsers()});
 function loadLog(){return run(async()=>{const s=await db.collection("vaudit").orderBy("at","desc").limit(50).get();
- $("logrows").innerHTML=s.docs.filter(d=>isAdmin()||!/^(backup_|branding_|category_)/.test(d.data().type)).map(d=>{const l=d.data();return `<tr><td>${esc(l.at&&l.at.toDate?l.at.toDate().toLocaleString():"")}</td><td>${esc(l.type.replace(/_/g," "))}</td><td>${esc(l.actor)}</td><td>${esc(l.first?l.first+" to "+l.last:l.number||"")}</td></tr>`}).join("")||"<tr><td>No activity yet.</td></tr>"})}
+ $("logrows").innerHTML=s.docs.filter(d=>isAdmin()||!/^(backup_|branding_|category_)/.test(d.data().type)).map(d=>{const l=d.data();return `<tr><td>${esc(l.at&&l.at.toDate?fdt(l.at.toDate()):"")}</td><td>${esc(l.type.replace(/_/g," "))}</td><td>${esc(l.actor)}</td><td>${esc(l.first?l.first+" to "+l.last:l.number||"")}</td></tr>`}).join("")||"<tr><td>No activity yet.</td></tr>"})}
 // ---- branding: company name and logo (admin edits; everyone sees it) ----
 let brand={name:"",logo:"",},newLogo=null;
 const okLogo=s=>typeof s==="string"&&s.length<=300000&&/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+\/=]+$/.test(s);
@@ -541,7 +549,7 @@ $("bkf").onchange=()=>run(async()=>{plan=null;$("bkgo").disabled=true;$("bkplan"
   Object.keys(src).forEach(id=>{if(ex.has(id))skip++;else if(okDoc[c](id,src[id]))add.push([id,src[id]]);else bad++});
   P[c]={total:Object.keys(src).length,add:add,skip:skip,bad:bad}}
  plan=P;const todo=P.vcfg.add.length+P.vbrand.add.length+P.vcats.add.length+P.vtemplates.add.length+P.vusers.add.length+P.vouchers.add.length+P.vaudit.add.length;
- $("bkplan").innerHTML=`<p>Backup made ${esc(data.createdAt||"")} by ${esc(data.createdBy||"")}.</p><table><thead><tr><th>Data</th><th>In file</th><th>Will be added</th><th>Already present</th><th>Rejected</th></tr></thead><tbody>${COLS.map(c=>`<tr><td>${c[1]}</td><td>${P[c[0]].total}</td><td>${P[c[0]].add.length}</td><td>${P[c[0]].skip}</td><td>${P[c[0]].bad}</td></tr>`).join("")}</tbody></table>${todo?"":'<p class="msg">Nothing to restore: everything in this file is already present.</p>'}`;
+ $("bkplan").innerHTML=`<p>Backup made ${esc(data.createdAt?fdt(new Date(data.createdAt)):"")} by ${esc(data.createdBy||"")}.</p><table><thead><tr><th>Data</th><th>In file</th><th>Will be added</th><th>Already present</th><th>Rejected</th></tr></thead><tbody>${COLS.map(c=>`<tr><td>${c[1]}</td><td>${P[c[0]].total}</td><td>${P[c[0]].add.length}</td><td>${P[c[0]].skip}</td><td>${P[c[0]].bad}</td></tr>`).join("")}</tbody></table>${todo?"":'<p class="msg">Nothing to restore: everything in this file is already present.</p>'}`;
  $("bkgo").disabled=!todo});
 $("bkgo").onclick=()=>run(async()=>{need(isAdmin()&&plan,"Choose a backup file first.");
  if(!confirm("Restore the missing records from this backup? Existing records are not changed."))return;
@@ -593,8 +601,8 @@ $("rsgo").onclick=()=>run(async()=>{need(isAdmin(),"Admins only.");const sel=rsS
 let repRows=[];
 const dOf=t=>t&&t.toDate?t.toDate().toLocaleDateString("en-CA"):"";
 const np=s=>{const m=String(s||"").match(/\d+/);return m?parseInt(m[0],10):NaN};
-const repCols=()=>["Voucher number","Category","Start date","End date","Status","Date created","Redeemed at","Redeemed by"].concat(["Recipient","Contact"]);
-const repCells=v=>[v.voucherNumber,catName(v.category),v.startDate,v.endDate,stat(v),dOf(v.createdAt),v.redeemedAt&&v.redeemedAt.toDate?v.redeemedAt.toDate().toLocaleString():"",v.redeemedBy||""].concat([v.recipientName||"",v.contactNumber||""]);
+const repCols=()=>["Voucher number","Category","Start date","End date","Status","Date created","Redeemed at","Redeemed by"].concat(isMgr()?["Recipient","Contact"]:[]);
+const repCells=v=>[v.voucherNumber,catName(v.category),fd(v.startDate),fd(v.endDate),stat(v),fd(dOf(v.createdAt)),v.redeemedAt&&v.redeemedAt.toDate?fdt(v.redeemedAt.toDate()):"",v.redeemedBy||""].concat(isMgr()?[v.recipientName||"",v.contactNumber||""]:[]);
 function runReport(){return run(async()=>{
  const f=$("rf").value,t=$("rt").value,basis=$("rb").value,cat=$("rc").value,st=$("rs").value,a=$("rnf").value.trim(),b=$("rnt").value.trim(),nf=np(a),nt=np(b);
  need(!f||!t||f<=t,"The from date must be on or before the to date.");
@@ -616,12 +624,12 @@ $("rcsv").onclick=()=>run(async()=>{need(repRows.length,"Run a report with at le
  const csv="\ufeff"+[repCols()].concat(repRows.map(repCells)).map(r=>r.map(cell).join(",")).join("\r\n");
  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));a.download="voucher-report-"+today()+".csv";document.body.appendChild(a);a.click();a.remove()});
 $("rprt").onclick=()=>{if(!repRows.length)return say("Run a report with at least one result first.",true);
- $("print").innerHTML=`${brandBlock()}<h2>Voucher report</h2><p>Printed ${esc(new Date().toLocaleString())} by ${esc(me)}. ${repRows.length} voucher(s).</p><table><thead><tr>${repCols().map(x=>`<th>${x}</th>`).join("")}</tr></thead><tbody>${repRows.map(v=>"<tr>"+repCells(v).map(x=>`<td>${esc(x)}</td>`).join("")+"</tr>").join("")}</tbody></table>`;print()};
+ $("print").innerHTML=`${brandBlock()}<h2>Voucher report</h2><p>Printed ${esc(fdt(new Date()))} by ${esc(me)}. ${repRows.length} voucher(s).</p><table><thead><tr>${repCols().map(x=>`<th>${x}</th>`).join("")}</tr></thead><tbody>${repRows.map(v=>"<tr>"+repCells(v).map(x=>`<td>${esc(x)}</td>`).join("")+"</tr>").join("")}</tbody></table>`;print()};
 // ---- redeem (everyone): type/select a number or scan a QR code. Looking up never redeems. ----
 function loadDl(){db.collection("vouchers").orderBy("seq","desc").limit(500).get().then(s=>{$("dl").innerHTML=s.docs.filter(d=>d.data().status==="active").map(d=>`<option value="${esc(d.id)}">`).join("")}).catch(()=>{})}
 function showV(v){const st=v.status==="deleted"?"not found":stat(v);
  if(v.status==="deleted"){$("sres").innerHTML=`<div class="msg err">No voucher found.</div>`;return}
- $("sres").innerHTML=`<h3>${esc(v.voucherNumber)}</h3><p>${catName(v.category)}${v.title?" – "+esc(v.title):""}<br>Valid ${esc(v.startDate)} to ${esc(v.endDate)}<br>Status: <span class="tag ${st.split(" ")[0]}">${esc(st)}</span></p>${(v.recipientName||v.contactNumber||v.remarks)?`<p style="white-space:pre-wrap">${v.recipientName?"Recipient: "+esc(v.recipientName)+"\n":""}${v.contactNumber?"Contact: "+esc(v.contactNumber)+"\n":""}${v.remarks?"Remarks: "+esc(v.remarks):""}</p>`:""}${st==="active"?'<button class="btn" id="rd">Redeem now</button>':""}`;
+ $("sres").innerHTML=`<h3>${esc(v.voucherNumber)}</h3><p>${catName(v.category)}${v.title?" – "+esc(v.title):""}<br>Valid ${esc(fd(v.startDate))} to ${esc(fd(v.endDate))}<br>Status: <span class="tag ${st.split(" ")[0]}">${esc(st)}</span></p>${(v.recipientName||v.contactNumber||v.remarks)?`<p style="white-space:pre-wrap">${v.recipientName?"Recipient: "+esc(v.recipientName)+"\n":""}${v.contactNumber?"Contact: "+esc(v.contactNumber)+"\n":""}${v.remarks?"Remarks: "+esc(v.remarks):""}</p>`:""}${st==="active"?'<button class="btn" id="rd">Redeem now</button>':""}`;
  const b=$("rd");if(b)b.onclick=()=>{if(confirm("Redeem voucher "+v.voucherNumber+"? This cannot be undone."))run(async()=>{await db.runTransaction(async tx=>{const s=await tx.get(V(v.voucherNumber));need(s.exists&&stat(s.data())==="active","This voucher can no longer be redeemed.");
   tx.update(V(v.voucherNumber),{status:"redeemed",redeemedAt:ts(),redeemedBy:me,modifiedAt:ts(),modifiedBy:me});audit(tx,{type:"voucher_redeemed",number:v.voucherNumber})});lookupNum(v.voucherNumber);loadDl()})}}
 function lookupNum(n){return run(async()=>{need(n,"Enter a voucher number.");const s=await V(n.trim()).get();need(s.exists,"No voucher found with that number.");showV(s.data())})}
