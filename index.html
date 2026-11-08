@@ -47,15 +47,15 @@ nav{display:flex;flex-wrap:wrap}video{width:100%;max-width:420px;border-radius:8
 <button class="btn" id="go">Search</button></div>
 <p style="color:var(--soft);margin:4px 0 0">Tick the vouchers you want in the table below, then use one of the options here.</p>
 <div class="grp"><h3>Design and print</h3><div class="bar"><div><label>Design template</label><select id="ptp"><option value="">Standard layout</option></select></div>
-<div><label>Page layout (templates)</label><select id="pmode"><option value="sheet">Several per A4 sheet (cut by hand)</option><option value="one">One per page (exact size)</option></select></div>
+<div><label>Page layout (templates)</label><select id="pmode"><option value="sheet">Several per A4 sheet (cut by hand)</option><option value="one">One per page (full template size, with bleed)</option></select></div>
 <div><label>Space between (mm)</label><input id="pgap" type="number" min="0" max="10" step="0.5" value="2" style="width:90px"></div>
 <label class="ck" style="margin:0 0 8px"><input type="checkbox" id="pcut" checked> Cut guides</label>
 <label class="ck" style="margin:0 0 8px"><input type="checkbox" id="showR"> Show recipient (standard layout)</label>
 <button class="btn" id="prt">Print selected</button></div></div>
-<div class="grp"><h3>Export designed vouchers as files (exact template size)</h3><p style="color:var(--soft);margin:0">Uses the design template chosen above. One file per voucher, named by voucher number; several come in one ZIP.</p>
+<div class="grp"><h3>Export designed vouchers as files (exact template size)</h3><p style="color:var(--soft);margin:0">Uses the design template chosen above. The bleed set in the template is removed, so each file is the final trimmed size. One file per voucher, named by voucher number; several come in one ZIP.</p>
 <div class="bar"><div><label>File format</label><select id="dfmt"><option value="pdf">PDF</option><option value="png">PNG</option><option value="jpg">JPG</option><option value="svg">SVG</option></select></div>
 <div><label>Resolution (PDF, PNG, JPG)</label><select id="ddpi"><option value="150">150 dpi</option><option value="300" selected>300 dpi</option><option value="600">600 dpi</option></select></div>
-<button class="btn" id="ddl">Download designed vouchers</button></div>
+<label class="ck" style="margin:0 0 8px"><input type="checkbox" id="dbl"> Keep the bleed (for a printer)</label><button class="btn" id="ddl">Download designed vouchers</button></div>
 <div class="bar"><button class="btn g" id="dwa">Send to WhatsApp…</button><span style="color:var(--soft);font-size:13px;align-self:center">Prepares the exact-size artwork and opens the recipient's WhatsApp chat (uses each voucher's contact number).</span></div></div>
 <div class="grp"><h3>QR codes only (to place in your own artwork)</h3><div class="bar"><div><label>File format</label><select id="qf"><option value="pdf">PDF (vector)</option><option value="svg">SVG (vector)</option><option value="png">PNG (300 dpi)</option><option value="jpg">JPG (300 dpi)</option></select></div>
 <div><label>QR size (mm)</label><input id="qs" type="number" min="10" max="200" value="30" style="width:90px"></div><button class="btn" id="qdl">Download QR codes</button></div></div>
@@ -83,9 +83,9 @@ nav{display:flex;flex-wrap:wrap}video{width:100%;max-width:420px;border-radius:8
 <div class="card" id="tpl" hidden><h2>Voucher design templates</h2>
 <p style="color:var(--soft)">Upload your artwork, drag the data fields into place and style them. Make one template per event or promotion, then pick it from the Print layout list on the Vouchers tab. Fonts are the ones installed on the computer that prints.</p>
 <div class="bar"><div><label>Template</label><select id="tsel"></select></div><button class="btn g" id="tnew">New</button><button class="btn g" id="tdup">Duplicate</button><button class="btn dng" id="tdel">Delete</button></div>
-<div id="ted"><div class="row"><div><label>Template name (event or promotion)</label><input id="tn" maxlength="80"></div><div><label>Width (mm)</label><input id="tw" type="number" min="20" max="500"></div><div><label>Height (mm)</label><input id="th" type="number" min="20" max="500"></div><div><label>Background colour</label><input id="tbc" type="color"></div></div>
+<div id="ted"><div class="row"><div><label>Template name (event or promotion)</label><input id="tn" maxlength="80"></div><div><label>Width (mm)</label><input id="tw" type="number" min="20" max="500"></div><div><label>Height (mm)</label><input id="th" type="number" min="20" max="500"></div><div><label>Bleed (mm, included in the size)</label><input id="tbl" type="number" min="0" max="20" step="0.5"></div><div><label>Background colour</label><input id="tbc" type="color"></div></div>
 <div class="bar"><div><label>Artwork image (JPG, PNG or WebP)</label><input id="tbg" type="file" accept="image/*"></div><button class="btn g sm" id="tbgx">Remove image</button></div>
-<div class="tgrid"><div id="tstage"><div id="tdc"></div><p style="color:var(--soft);font-size:13px">Drag a field on the preview to move it. The preview uses sample data and shows the real size ratio.</p></div>
+<div class="tgrid"><div id="tstage"><div id="tdc"></div><p style="color:var(--soft);font-size:13px">Drag a field on the preview to move it. The preview uses sample data and shows the real size ratio. If you set a bleed, the red dashed line shows the final trimmed size; exports remove the bleed.</p></div>
 <div id="tpanel"><h3 style="font-size:16px">Fields (tick to show)</h3><div id="tflds"></div><h3 style="font-size:16px;margin-top:14px">Selected field</h3><div id="tprop"></div></div></div>
 <div class="bar"><button class="btn" id="tsave">Save template</button></div></div></div>
 
@@ -186,7 +186,8 @@ const FIREBASE_CONFIG={apiKey: "AIzaSyACu2vtPryh90P65Ky1mfZGuXh3oXWOJyM",
 
   messagingSenderId: "834236502291",
 
-  appId: "1:834236502291:web:462d768c73857437dacae6"};
+  appId: "1:834236502291:web:462d768c73857437dacae6"
+};
 if(FIREBASE_CONFIG.apiKey==="YOUR_API_KEY"){document.addEventListener("DOMContentLoaded",()=>{document.body.insertAdjacentHTML("afterbegin",'<div style="background:#AE4530;color:#fff;padding:10px 16px;text-align:center">Setup needed: paste your Firebase config into index.html (see README.md). Nothing will work until then.</div>')});throw new Error("Firebase is not configured yet")}
 firebase.initializeApp(FIREBASE_CONFIG);const db=firebase.firestore(),FV=firebase.firestore.FieldValue,ts=()=>FV.serverTimestamp();
 const $=id=>document.getElementById(id),esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -246,6 +247,9 @@ $("rows").onclick=e=>{const d=e.target.dataset;
 $("ecn").onclick=()=>show("list");
 $("esv").onclick=()=>run(async()=>{const s=form("e");await db.runTransaction(async tx=>{const c=await tx.get(V(editId));need(c.exists&&c.data().status!=="deleted","Voucher not found.");
  tx.update(V(editId),Object.assign({},s,{modifiedAt:ts(),modifiedBy:me}));audit(tx,{type:"voucher_edited",number:editId})});say("Voucher saved.");show("list")});
+function cropMarks(T){const b=T.bleed||0,w=T.w,h=T.h,L=Math.max(0,b-0.6),g=0.3;if(b<1.5)return "";let p="";
+ [[b,b,-1,-1],[w-b,b,1,-1],[b,h-b,-1,1],[w-b,h-b,1,1]].forEach(c=>{p+="M"+(c[0]+c[2]*g)+" "+c[1]+"h"+(c[2]*L)+"M"+c[0]+" "+(c[1]+c[3]*g)+"v"+(c[3]*L)});
+ return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" style="position:absolute;left:0;top:0;width:${w}mm;height:${h}mm"><path d="${p}" stroke="#fff" stroke-width=".8" fill="none"/><path d="${p}" stroke="#000" stroke-width=".25" fill="none"/></svg>`}
 const stdPrint=()=>{const sel=Array.from(document.querySelectorAll("#rows input:checked")).map(c=>cache[c.dataset.i]);if(!sel.length)return say("Select at least one voucher to print.",true);
  $("print").innerHTML=sel.map(v=>{const qr=qrcode(0,"M");qr.addData(qrUrl(v));qr.make();
  return `<div class="v"><div>${brandBlock()}<h3>${esc(v.voucherNumber)}</h3><div>${catName(v.category)}</div>${v.title?`<div>${esc(v.title)}</div>`:""}<div>Valid ${esc(fd(v.startDate))} to ${esc(fd(v.endDate))}</div>${$("showR").checked&&(v.recipientName||v.contactNumber)?`<div>${esc(v.recipientName)} ${esc(v.contactNumber)}</div>`:""}</div>${qr.createSvgTag(3,0)}</div>`}).join("");print()};
@@ -256,7 +260,7 @@ $("prt").onclick=()=>run(async()=>{const tid=$("ptp").value,t=tid&&tpls[tid];if(
   const pt=fit(210,297),ld=fit(297,210),land=ld.c*ld.r>pt.c*pt.r,W=land?297:210,H=land?210:297,f=land?ld:pt;
   need(f.c>=1&&f.r>=1,"This template is too big to fit on an A4 sheet. Make it smaller, or choose 'One per page'.");
   const per=f.c*f.r,ox=(W-f.c*cw)/2,oy=(H-f.r*ch)/2,cut=$("pcut").checked;let html='<style>@page{size:A4 '+(land?"landscape":"portrait")+';margin:0}</style>';
-  for(let i=0;i<sel.length;i+=per){html+=`<div style="position:relative;width:${W}mm;height:${H}mm;overflow:hidden;${i+per<sel.length?"page-break-after:always":""}">`+sel.slice(i,i+per).map((v,j)=>`<div style="position:absolute;left:${(ox+(j%f.c)*cw).toFixed(2)}mm;top:${(oy+Math.floor(j/f.c)*ch).toFixed(2)}mm;width:${cw}mm;height:${ch}mm;box-sizing:border-box;padding:${gap/2}mm;${cut?"outline:0.2mm dashed #888":""}">${tplHtml(T,v,null)}</div>`).join("")+"</div>"}
+  for(let i=0;i<sel.length;i+=per){html+=`<div style="position:relative;width:${W}mm;height:${H}mm;overflow:hidden;${i+per<sel.length?"page-break-after:always":""}">`+sel.slice(i,i+per).map((v,j)=>`<div style="position:absolute;left:${(ox+(j%f.c)*cw).toFixed(2)}mm;top:${(oy+Math.floor(j/f.c)*ch).toFixed(2)}mm;width:${cw}mm;height:${ch}mm;box-sizing:border-box;padding:${gap/2}mm;${cut&&!(T.bleed>=1.5)?"outline:0.2mm dashed #888":""}"><div style="position:relative;width:${T.w}mm;height:${T.h}mm">${tplHtml(T,v,null)}${cut?cropMarks(T):""}</div></div>`).join("")+"</div>"}
   $("print").innerHTML=html;say(sel.length+" voucher(s) on "+Math.ceil(sel.length/per)+" A4 page(s), "+f.c+" × "+f.r+" per page"+(land?" (landscape)":"")+".");print();return}
  $("print").innerHTML=(one?`<style>@page{size:${T.w}mm ${T.h}mm;margin:0}</style>`:"")+sel.map(v=>`<div style="${one?"page-break-after:always":"margin:0 0 4mm"}">${tplHtml(T,v,null)}</div>`).join("");print()});
 // ---- QR-only export (admin): one file per voucher, named by voucher number ----
@@ -388,7 +392,7 @@ const FONTS=[["Arial","Arial, Helvetica, sans-serif"],["Verdana","Verdana, Genev
 const FDEF=[["company","Company name"],["voucherNumber","Voucher number"],["category","Category"],["title","Title or description"],["validity","Validity dates"],["startDate","Start date"],["endDate","End date"],["recipientName","Recipient name"],["contactNumber","Contact number"],["remarks","Remarks"],["qr","QR code"]];
 const DFLT={company:{on:1,x:6,y:5,w:60,size:12,bold:1},voucherNumber:{on:1,x:6,y:18,w:55,size:30,bold:1},category:{on:1,x:6,y:38,w:55,size:14},title:{on:1,x:6,y:48,w:60,size:13},validity:{on:1,x:6,y:62,w:60,size:11,prefix:"Valid: "},startDate:{on:0,x:6,y:70,w:30,size:10,prefix:"From: "},endDate:{on:0,x:40,y:70,w:30,size:10,prefix:"To: "},recipientName:{on:0,x:6,y:76,w:60,size:11,prefix:"Name: "},contactNumber:{on:0,x:6,y:84,w:40,size:10,prefix:"Contact: "},remarks:{on:0,x:6,y:90,w:60,size:9},qr:{on:1,x:70,y:20,size:30}};
 const defField=k=>Object.assign({key:k,on:0,x:6,y:6,w:50,size:12,font:FONTS[0][1],color:"#222222",bold:0,italic:0,align:"left",prefix:""},DFLT[k]);
-const newTpl=()=>({id:null,name:"New template",w:180,h:80,bgc:"#ffffff",bg:"",fields:FDEF.map(d=>defField(d[0]))});
+const newTpl=()=>({id:null,name:"New template",bleed:0,w:180,h:80,bgc:"#ffffff",bg:"",fields:FDEF.map(d=>defField(d[0]))});
 const okImg=s=>typeof s==="string"&&s.length<=950000&&/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+\/=]+$/.test(s);
 const sampleV=()=>({sample:true,voucherNumber:"6126",category:Object.keys(cats)[0]||"PAID",title:"Sample title",startDate:"2026-11-01",endDate:"2026-12-31",recipientName:"Sample Person",contactNumber:"+974 0000 0000",remarks:"Sample remarks"});
 const fval=(k,v)=>k==="category"?catName(v.category):k==="validity"?(fd(v.startDate)+" to "+fd(v.endDate)):(k==="startDate"||k==="endDate")?fd(v[k]):k==="company"?(v.sample?(brand.name||"Company name"):(brand.name||"")):(v[k]==null?"":String(v[k]));
@@ -409,16 +413,17 @@ let tpls={},cur=null,selKey="voucherNumber",drag=null;
 const fld=k=>cur&&cur.fields.find(f=>f.key===k);
 const lblOf=k=>(FDEF.find(d=>d[0]===k)||[0,k])[1];
 const normT=c=>{FDEF.forEach(d=>{if(!c.fields.some(f=>f.key===d[0]))c.fields.push(defField(d[0]))});return c};
-const cloneT=(t,id)=>normT(Object.assign(JSON.parse(JSON.stringify({name:t.name,w:t.w,h:t.h,bgc:t.bgc||"#ffffff",bg:t.bg||"",fields:t.fields||[]})),{id:id}));
+const cloneT=(t,id)=>normT(Object.assign(JSON.parse(JSON.stringify({name:t.name,bleed:t.bleed||0,w:t.w,h:t.h,bgc:t.bgc||"#ffffff",bg:t.bg||"",fields:t.fields||[]})),{id:id}));
 async function loadTpls(){const s=await db.collection("vtemplates").get();tpls={};s.docs.forEach(d=>{tpls[d.id]=d.data()});fillTpls()}
 function fillTpls(){const ids=Object.keys(tpls).sort((a,b)=>String(tpls[a].name).localeCompare(String(tpls[b].name)));
  const opts=ids.map(id=>`<option value="${esc(id)}">${esc(tpls[id].name)}</option>`).join(""),p=$("ptp");let pv=p.value;
  if(!pv){try{pv=localStorage.getItem("vtpl")||""}catch(e){}}
  p.innerHTML='<option value="">Standard layout</option>'+opts;if(tpls[pv])p.value=pv;
  $("tsel").innerHTML=(cur&&!cur.id?'<option value="__new">New template (unsaved)</option>':"")+opts;$("tsel").value=cur&&cur.id?cur.id:(cur?"__new":(ids[0]||""))}
-function syncT(){$("tn").value=cur.name;$("tw").value=cur.w;$("th").value=cur.h;$("tbc").value=cur.bgc||"#ffffff"}
+function syncT(){$("tn").value=cur.name;$("tw").value=cur.w;$("th").value=cur.h;$("tbl").value=cur.bleed||0;$("tbc").value=cur.bgc||"#ffffff"}
 function drawT(){if(!cur)return;const w=$("tstage").clientWidth||600;$("tdc").innerHTML=tplHtml(cur,sampleV(),w/cur.w);
  const el=$("tdc").querySelector('[data-k="'+selKey+'"]');if(el)el.classList.add("sel");
+ if(cur.bleed>0){const b=cur.bleed*(w/cur.w);$("tdc").insertAdjacentHTML("beforeend",`<div style="position:absolute;left:${b}px;top:${b}px;right:${b}px;bottom:${b}px;border:1px dashed #d33;pointer-events:none"><span style="position:absolute;left:3px;top:1px;font-size:10px;color:#d33;background:rgba(255,255,255,.7)">Trim line: final size</span></div>`)}
  $("tflds").innerHTML=FDEF.map(d=>{const f=fld(d[0]);return `<label class="ck" style="${selKey===d[0]?"background:#e3eee9;border-radius:6px;padding:2px 4px":""}"><input type="checkbox" data-on="${d[0]}" ${f.on?"checked":""}><span data-pick="${d[0]}" style="cursor:pointer;flex:1">${d[1]}</span></label>`}).join("")}
 function showProps(){const f=fld(selKey);if(!f){$("tprop").innerHTML="<p>Select a field.</p>";return}
  const sel=(p,list,v)=>`<select data-p="${p}">${list.map(o=>`<option value="${esc(o[1])}" ${o[1]===v?"selected":""}>${esc(o[0])}</option>`).join("")}</select>`;
@@ -440,7 +445,7 @@ $("tdel").onclick=()=>run(async()=>{need(isMgr()&&cur,"Not allowed.");
  if(!confirm('Delete the template "'+cur.name+'"? Vouchers are not affected.'))return;
  await db.collection("vtemplates").doc(cur.id).delete();await aud({type:"template_deleted",number:cur.name});cur=null;await openTpl()});
 $("ted").addEventListener("input",e=>{if(!cur)return;const id=e.target.id;
- if(id==="tn")cur.name=e.target.value;else if(id==="tw"){cur.w=+e.target.value||cur.w;drawT()}else if(id==="th"){cur.h=+e.target.value||cur.h;drawT()}else if(id==="tbc"){cur.bgc=e.target.value;drawT()}});
+ if(id==="tn")cur.name=e.target.value;else if(id==="tw"){cur.w=+e.target.value||cur.w;drawT()}else if(id==="th"){cur.h=+e.target.value||cur.h;drawT()}else if(id==="tbl"){cur.bleed=Math.max(0,Math.min(20,+e.target.value||0));drawT()}else if(id==="tbc"){cur.bgc=e.target.value;drawT()}});
 $("tprop").oninput=e=>{const p=e.target.dataset.p,f=fld(selKey);if(!p||!f)return;const t=e.target;f[p]=t.type==="checkbox"?(t.checked?1:0):t.type==="number"?(+t.value||0):t.value;drawT()};
 $("tflds").onclick=e=>{const d=e.target.dataset;if(d.on){fld(d.on).on=e.target.checked?1:0;selKey=d.on;showProps();drawT()}else if(d.pick){selKey=d.pick;showProps();drawT()}};
 $("tdc").onpointerdown=e=>{const el=e.target.closest("[data-k]");if(!el||!cur)return;selKey=el.dataset.k;const f=fld(selKey),r=$("tdc").firstChild.getBoundingClientRect();
@@ -460,7 +465,8 @@ $("tbgx").onclick=()=>{if(cur){cur.bg="";drawT()}};
 $("tsave").onclick=()=>run(async()=>{need(isMgr(),"Not allowed.");need(cur,"Nothing to save.");const name=$("tn").value.trim();need(name&&name.length<=80,"Enter a template name (up to 80 characters).");
  need(cur.w>=20&&cur.w<=500&&cur.h>=20&&cur.h<=500,"Width and height must be between 20 and 500 mm.");
  const id=cur.id||"T"+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
- await db.collection("vtemplates").doc(id).set({name:name,w:cur.w,h:cur.h,bgc:cur.bgc||"#ffffff",bg:cur.bg||"",fields:cur.fields,updatedBy:me,updatedAt:ts()});
+ need((cur.bleed||0)*2<Math.min(cur.w,cur.h)-10,"The bleed is too large for this size.");
+ await db.collection("vtemplates").doc(id).set({name:name,bleed:cur.bleed||0,w:cur.w,h:cur.h,bgc:cur.bgc||"#ffffff",bg:cur.bg||"",fields:cur.fields,updatedBy:me,updatedAt:ts()});
  await aud({type:"template_saved",number:name});cur.id=id;cur.name=name;await loadTpls();say("Template saved. Choose it from the Print layout list on the Vouchers tab.")});
 // ---- export designed vouchers at the exact template size: PDF, PNG, JPG or SVG ----
 const mcv=document.createElement("canvas").getContext("2d");
@@ -481,15 +487,15 @@ function layoutT(t,v){const W=t.w,H=t.h,items=[];
   items.push({type:"text",lines:lines,x:f.align==="center"?bx+bw/2:f.align==="right"?bx+bw:bx,y:by,lh:lh,size:sizeMm,align:f.align,color:f.color,f:f})});
  return {W:W,H:H,items:items}}
 function qrMods(txt){const q=qrcode(0,"M");q.addData(txt);q.make();const n=q.getModuleCount(),m=2,N=n+2*m,d=[];for(let r=0;r<n;r++)for(let c=0;c<n;c++)if(q.isDark(r,c))d.push([c+m,r+m]);return {N:N,d:d}}
-function renderCanvas(t,lay,dpi,bgImg){const k=dpi/25.4,c=document.createElement("canvas");c.width=Math.round(lay.W*k);c.height=Math.round(lay.H*k);const x=c.getContext("2d");
- x.fillStyle=t.bgc||"#ffffff";x.fillRect(0,0,c.width,c.height);if(bgImg)x.drawImage(bgImg,0,0,c.width,c.height);
+function renderCanvas(t,lay,dpi,bgImg,bl){bl=bl||0;const k=dpi/25.4,c=document.createElement("canvas");c.width=Math.round((lay.W-2*bl)*k);c.height=Math.round((lay.H-2*bl)*k);const x=c.getContext("2d");x.translate(-bl*k,-bl*k);
+ x.fillStyle=t.bgc||"#ffffff";x.fillRect(0,0,lay.W*k,lay.H*k);if(bgImg)x.drawImage(bgImg,0,0,lay.W*k,lay.H*k);
  lay.items.forEach(it=>{
   if(it.type==="qr"){const q=qrMods(it.txt),u=it.s*k/q.N,X=it.x*k,Y=it.y*k;x.fillStyle="#fff";x.fillRect(X,Y,it.s*k,it.s*k);x.fillStyle="#000";
    q.d.forEach(p=>{const l=Math.round(X+p[0]*u),tp=Math.round(Y+p[1]*u);x.fillRect(l,tp,Math.round(X+(p[0]+1)*u)-l,Math.round(Y+(p[1]+1)*u)-tp)});return}
   x.font=fontCss(it.f,it.size*k);x.fillStyle=it.color;x.textAlign=it.align==="center"?"center":it.align==="right"?"right":"left";x.textBaseline="middle";
   it.lines.forEach((ln,i)=>x.fillText(ln,it.x*k,(it.y+it.lh*(i+.5))*k))});
  return c}
-function toSvg(t,lay){const a={left:"start",center:"middle",right:"end"};let o=`<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${lay.W}mm" height="${lay.H}mm" viewBox="0 0 ${lay.W} ${lay.H}"><rect width="${lay.W}" height="${lay.H}" fill="${esc(t.bgc||"#ffffff")}"/>`;
+function toSvg(t,lay,bl){bl=bl||0;const a={left:"start",center:"middle",right:"end"};let o=`<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${lay.W-2*bl}mm" height="${lay.H-2*bl}mm" viewBox="${bl} ${bl} ${lay.W-2*bl} ${lay.H-2*bl}"><rect width="${lay.W}" height="${lay.H}" fill="${esc(t.bgc||"#ffffff")}"/>`;
  if(okImg(t.bg))o+=`<image x="0" y="0" width="${lay.W}" height="${lay.H}" preserveAspectRatio="none" href="${t.bg}" xlink:href="${t.bg}"/>`;
  lay.items.forEach(it=>{
   if(it.type==="qr"){const q=qrMods(it.txt);o+=`<g transform="translate(${it.x.toFixed(3)} ${it.y.toFixed(3)}) scale(${(it.s/q.N).toFixed(5)})"><rect width="${q.N}" height="${q.N}" fill="#fff"/><path d="${q.d.map(p=>"M"+p[0]+" "+p[1]+"h1v1h-1z").join("")}" fill="#000" shape-rendering="crispEdges"/></g>`;return}
@@ -497,19 +503,19 @@ function toSvg(t,lay){const a={left:"start",center:"middle",right:"end"};let o=`
  return o+"</svg>"}
 $("ddl").onclick=()=>run(async()=>{need(isMgr(),"Not allowed.");const tid=$("ptp").value;need(tid&&tpls[tid],"Choose a design template in 'Print layout' first.");
  const sel=Array.from(document.querySelectorAll("#rows input:checked")).map(c=>cache[c.dataset.i]);need(sel.length,"Select at least one voucher first.");
- const f=$("dfmt").value,dpi=+$("ddpi").value,T=cloneT(tpls[tid],tid),k=dpi/25.4;
- need(f==="svg"||T.w*k*T.h*k<=90e6,"This design is too large for that resolution. Choose a lower resolution.");
+ const f=$("dfmt").value,dpi=+$("ddpi").value,T=cloneT(tpls[tid],tid),k=dpi/25.4,bl=$("dbl").checked?0:(T.bleed||0),fw=T.w-2*bl,fh=T.h-2*bl;
+ need(f==="svg"||fw*k*fh*k<=90e6,"This design is too large for that resolution. Choose a lower resolution.");
  need(f!=="pdf"||window.jspdf,"The PDF tool did not load. Check your internet connection and reload.");need(sel.length===1||window.JSZip,"The ZIP tool did not load. Check your internet connection and reload.");
  const bgImg=f!=="svg"&&okImg(T.bg)?await loadImg(T.bg):null;
  try{await Promise.all(T.fields.filter(x=>x.on&&x.key!=="qr").map(x=>document.fonts.load(fontCss(x,16))))}catch(e){}
- const one=async v=>{const lay=layoutT(T,v);if(f==="svg")return new Blob([toSvg(T,lay)],{type:"image/svg+xml"});
-  const c=renderCanvas(T,lay,dpi,bgImg);if(f==="png")return await new Promise(r=>c.toBlob(r,"image/png"));if(f==="jpg")return await new Promise(r=>c.toBlob(r,"image/jpeg",.95));
-  const d=new window.jspdf.jsPDF({unit:"mm",format:[T.w,T.h],orientation:T.w>T.h?"l":"p"});d.addImage(c.toDataURL("image/jpeg",.95),"JPEG",0,0,T.w,T.h);return d.output("blob")};
+ const one=async v=>{const lay=layoutT(T,v);if(f==="svg")return new Blob([toSvg(T,lay,bl)],{type:"image/svg+xml"});
+  const c=renderCanvas(T,lay,dpi,bgImg,bl);if(f==="png")return await new Promise(r=>c.toBlob(r,"image/png"));if(f==="jpg")return await new Promise(r=>c.toBlob(r,"image/jpeg",.95));
+  const d=new window.jspdf.jsPDF({unit:"mm",format:[fw,fh],orientation:fw>fh?"l":"p"});d.addImage(c.toDataURL("image/jpeg",.95),"JPEG",0,0,fw,fh);return d.output("blob")};
  if(sel.length===1)saveBlob(await one(sel[0]),sel[0].voucherNumber+"."+f);
  else{const z=new JSZip();for(let i=0;i<sel.length;i++){z.file(sel[i].voucherNumber+"."+f,await one(sel[i]));if(i%5===0){say("Preparing "+i+" of "+sel.length+"…");await new Promise(r=>setTimeout(r))}}
   saveBlob(await z.generateAsync({type:"blob"}),"designed-vouchers-"+sel[0].voucherNumber+"-to-"+sel[sel.length-1].voucherNumber+"-"+f+".zip")}
  await aud({type:"designs_exported",number:sel.length+" × "+f.toUpperCase()});
- say(sel.length+" voucher(s) exported as "+f.toUpperCase()+" at exactly "+T.w+" × "+T.h+" mm"+(f==="svg"?"":" ("+dpi+" dpi)")+(sel.length>1?", one file per voucher inside a ZIP, named by voucher number.":"."))});
+ say(sel.length+" voucher(s) exported as "+f.toUpperCase()+" at exactly "+fw+" × "+fh+" mm"+(bl?" (the "+bl+" mm bleed was removed)":"")+(f==="svg"?"":" ("+dpi+" dpi)")+(sel.length>1?", one file per voucher inside a ZIP, named by voucher number.":"."))});
 // ---- send to WhatsApp (admin + supervisor): exact-size artwork + a chat with a ready message ----
 const DEF_WA="Hello {name}, here is your voucher {number} from {company}. Valid {valid}.";
 let wa={list:[],i:0,T:null,bg:null,blob:null,url:""};
@@ -521,7 +527,7 @@ async function waLoad(){const v=wa.list[wa.i];$("wamsg").innerHTML="";$("wago").
  const num=waNumber(v.contactNumber);$("wahead").textContent="Voucher "+v.voucherNumber+" · "+(v.recipientName||"no name")+" · "+(num?"+"+num:v.contactNumber)+"   ("+(wa.i+1)+" of "+wa.list.length+")";
  $("watxt").value=waText(v);$("waprev").disabled=wa.i===0;$("wanext").disabled=wa.i>=wa.list.length-1;
  if(!num)$("wamsg").innerHTML='<div class="msg err">This contact number has no country code. Write it like +974 5555 0000, or set a default country code in the Branding tab.</div>';
- wa.blob=await new Promise(r=>renderCanvas(wa.T,layoutT(wa.T,v),300,wa.bg).toBlob(r,"image/png"));
+ wa.blob=await new Promise(r=>renderCanvas(wa.T,layoutT(wa.T,v),300,wa.bg,wa.T.bleed||0).toBlob(r,"image/png"));
  if(wa.url)URL.revokeObjectURL(wa.url);wa.url=URL.createObjectURL(wa.blob);$("wap").src=wa.url;$("wago").disabled=!num}
 $("dwa").onclick=()=>run(async()=>{need(isMgr(),"Not allowed.");const tid=$("ptp").value;need(tid&&tpls[tid],"Choose a design template first (Design template list above).");
  const sel=Array.from(document.querySelectorAll("#rows input:checked")).map(c=>cache[c.dataset.i]);need(sel.length,"Select at least one voucher first.");
