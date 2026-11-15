@@ -57,9 +57,9 @@ nav{display:flex;flex-wrap:wrap}video{width:100%;max-width:420px;border-radius:8
 <div><label>Resolution (PDF, PNG, JPG)</label><select id="ddpi"><option value="150">150 dpi</option><option value="300" selected>300 dpi</option><option value="600">600 dpi</option></select></div>
 <label class="ck" style="margin:0 0 8px"><input type="checkbox" id="dbl"> Keep the bleed (for a printer)</label><button class="btn" id="ddl">Download designed vouchers</button></div>
 <div class="bar"><button class="btn g" id="dwa">Send to WhatsApp…</button><span style="color:var(--soft);font-size:13px;align-self:center">Prepares the exact-size artwork and opens the recipient's WhatsApp chat (uses each voucher's contact number).</span></div></div>
-<div class="grp"><h3>QR codes only (to place in your own artwork)</h3><div class="bar"><div><label>File format</label><select id="qf"><option value="pdf">PDF (vector)</option><option value="svg">SVG (vector)</option><option value="png">PNG (300 dpi)</option><option value="jpg">JPG (300 dpi)</option></select></div>
+<div class="grp" id="gqr"><h3>QR codes only (to place in your own artwork)</h3><div class="bar"><div><label>File format</label><select id="qf"><option value="pdf">PDF (vector)</option><option value="svg">SVG (vector)</option><option value="png">PNG (300 dpi)</option><option value="jpg">JPG (300 dpi)</option></select></div>
 <div><label>QR size (mm)</label><input id="qs" type="number" min="10" max="200" value="30" style="width:90px"></div><button class="btn" id="qdl">Download QR codes</button></div></div>
-<div class="grp"><h3>QR links as a spreadsheet (CSV)</h3><p style="color:var(--soft);margin:0">Uses the ticked vouchers. If none are ticked, fill in a number range, or leave both empty for all vouchers.</p>
+<div class="grp" id="gql"><h3>QR links as a spreadsheet (CSV)</h3><p style="color:var(--soft);margin:0">Uses the ticked vouchers. If none are ticked, fill in a number range, or leave both empty for all vouchers.</p>
 <div class="bar"><div><label>Number from</label><input id="lf" placeholder="optional" style="width:120px"></div><div><label>to</label><input id="lt" placeholder="optional" style="width:120px"></div><button class="btn" id="ldl">Download QR links (CSV)</button></div></div>
 <table><thead><tr><th><input type="checkbox" id="sel" style="width:auto" aria-label="Select all vouchers"></th><th>Number</th><th>Category</th><th>Location</th><th>Valid</th><th>Status</th><th>Recipient</th><th></th></tr></thead><tbody id="rows"></tbody></table></div>
 
@@ -108,12 +108,12 @@ nav{display:flex;flex-wrap:wrap}video{width:100%;max-width:420px;border-radius:8
 <p style="color:var(--soft)">Dates: DD-MM-YYYY (day first; YYYY-MM-DD also works). Up to 1,000 rows per import. In Excel, format phone number columns as Text so leading zeros and + signs are kept. Updating only needs a "Voucher number" column plus the columns you want to change; a file exported with Download QR links (CSV) works too.</p>
 <div class="bar"><button class="btn g sm" id="impt1">Download template: update</button><button class="btn g sm" id="impt2">Download template: create</button></div>
 <div id="impplan"></div><div class="bar"><button class="btn" id="impgo" disabled>Import</button><button class="btn g" id="imprej" hidden>Download rejected rows</button><button class="btn g" id="impdl" hidden>Download these vouchers with QR links (CSV)</button></div><div id="impres"></div>
-<h2 style="margin-top:32px">Export vouchers with QR links</h2>
+<div id="xsec"><h2 style="margin-top:32px">Export vouchers with QR links</h2>
 <p style="color:var(--soft)">One CSV with every voucher's QR link, category, dates, status, title, recipient, contact and remarks. Leave a filter empty to include everything. The file can be edited in Excel and imported back using "Update existing vouchers".</p>
 <div class="row"><div><label>Number from</label><input id="xf" placeholder="optional"></div><div><label>Number to</label><input id="xt" placeholder="optional"></div>
 <div><label>Category</label><select id="xc"><option value="">All categories</option></select></div>
 <div><label>Status</label><select id="xs"><option value="">All statuses</option><option value="active">Active</option><option value="not yet valid">Not yet valid</option><option value="expired">Expired</option><option value="redeemed">Redeemed</option><option value="voided">Voided</option></select></div></div>
-<div class="bar"><button class="btn" id="xgo">Export vouchers (CSV)</button></div></div>
+<div class="bar"><button class="btn" id="xgo">Export vouchers (CSV)</button></div></div></div>
 
 <div class="card" id="cat" hidden><h2>Categories</h2><p>These appear in the voucher category lists, filters and reports. Renaming a category updates every voucher that uses it. A category can only be deleted when no voucher uses it.</p>
 <table><thead><tr><th>Name</th><th>Code</th><th></th></tr></thead><tbody id="crows"></tbody></table>
@@ -186,7 +186,7 @@ nav{display:flex;flex-wrap:wrap}video{width:100%;max-width:420px;border-radius:8
 <script>
 (function(){"use strict";
 // STEP 4 of README.md: paste YOUR new project's firebaseConfig values between the quotes.
-const FIREBASE_CONFIG={apiKey: "AIzaSyACu2vtPryh90P65Ky1mfZGuXh3oXWOJyM",
+const FIREBASE_CONFIG={aapiKey: "AIzaSyACu2vtPryh90P65Ky1mfZGuXh3oXWOJyM",
 
   authDomain: "voucher-system-91b1c.firebaseapp.com",
 
@@ -223,13 +223,13 @@ const ST={get:k=>{try{return localStorage.getItem(k)||sessionStorage.getItem(k)}
 if(ST.get("vt")&&Date.now()-(+ST.get("vt"))>30*864e5)ST.clear(); // keep-signed-in lasts 30 days
 let me=ST.get("vu"),role=ST.get("vr"),cache=[],pending=null,users=[],editId=null;
 const MODS=[["list","Vouchers","List, edit, void, delete, print, QR and design exports, WhatsApp"],["gen","Generate","Generate voucher series and manual numbers"],["imp","Import / Export","CSV import and export"],["tpl","Templates","Design template editor"],["cfg","Numbering","Voucher number settings"],["cat","Categories & Locations","Edit the category and location lists"],["usr","Users","Add and manage users (admins stay hidden; only supervisors and end users can be managed). Sensitive."],["log","Audit log","See the activity history"],["brd","Branding","Company name, logo and WhatsApp settings. Sensitive."],["bak","Backup & restore","Download and restore all data. Sensitive."],["rst","Reset data","Permanently delete data. Very sensitive."],["rep","Reports","Run, print and export reports"],["red","Redeem","Look up, scan and redeem vouchers"]];
-const DEFPERM={supervisor:{list:1,gen:1,imp:1,tpl:1,cfg:1,usr:1,log:1,rep:1,red:1,cat:0,brd:0,bak:0,rst:0,pii:1},user:{rep:1,red:1,list:0,gen:0,imp:0,tpl:0,cfg:0,usr:0,log:0,cat:0,brd:0,bak:0,rst:0,pii:0}};
+const DEFPERM={supervisor:{list:1,gen:1,imp:1,tpl:1,cfg:1,usr:1,log:1,rep:1,red:1,cat:0,brd:0,bak:0,rst:0,pii:1,qrc:1,qrl:1},user:{rep:1,red:1,list:0,gen:0,imp:0,tpl:0,cfg:0,usr:0,log:0,cat:0,brd:0,bak:0,rst:0,pii:0,qrc:0,qrl:0}};
 let perms=JSON.parse(JSON.stringify(DEFPERM));
 const can=m=>role==="admin"||(m!=="prm"&&!!(perms[role]&&perms[role][m])),pii=()=>can("pii");
 const firstTab=()=>can("list")?"list":can("red")?"red":(MODS.map(m=>m[0]).find(can)||null);
 async function loadPerms(){const s=await db.collection("vperms").doc("main").get();perms=JSON.parse(JSON.stringify(DEFPERM));
  if(s.exists){const d=s.data();["supervisor","user"].forEach(r=>Object.keys(DEFPERM[r]).forEach(k=>{if(d[r]&&typeof d[r][k]!=="undefined")perms[r][k]=d[r][k]?1:0}))}}
-const applyNav=()=>document.querySelectorAll("nav button").forEach(b=>{b.hidden=!can(b.dataset.t)});
+const applyNav=()=>{document.querySelectorAll("nav button").forEach(b=>{b.hidden=!can(b.dataset.t)});$("gqr").hidden=!can("qrc");$("gql").hidden=!can("qrl");$("xsec").hidden=!can("qrl")};
 const isAdmin=()=>role==="admin",isMgr=()=>role==="admin"||role==="supervisor",roleLabel=r=>r==="admin"?"Admin":r==="supervisor"?"Supervisor":"End user";
 // ---- sign in ----
 function enter(){$("login").hidden=true;$("app").style.display="block";$("who").textContent=me+" ("+roleLabel(role)+")";
@@ -292,7 +292,7 @@ function qrPng(q,mm,type){return new Promise(ok=>{const n=q.getModuleCount(),tot
  x.fillStyle="#fff";x.fillRect(0,0,c.width,c.height);x.fillStyle="#000";for(let r=0;r<n;r++)for(let k=0;k<n;k++)if(q.isDark(r,k))x.fillRect((k+4)*s,(r+4)*s,s,s);c.toBlob(ok,type||"image/png",.95)})}
 function saveBlob(b,name){const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000)}
 $("sel").onchange=()=>document.querySelectorAll("#rows input[type=checkbox]").forEach(c=>c.checked=$("sel").checked);
-$("qdl").onclick=()=>run(async()=>{need(can("list"),"Not allowed.");const sel=Array.from(document.querySelectorAll("#rows input:checked")).map(c=>cache[c.dataset.i]);
+$("qdl").onclick=()=>run(async()=>{need(can("list")&&can("qrc"),"Not allowed.");const sel=Array.from(document.querySelectorAll("#rows input:checked")).map(c=>cache[c.dataset.i]);
  need(sel.length,"Select at least one voucher first (use the box at the top of the list to select all).");
  const mm=+$("qs").value;need(mm>=10&&mm<=200,"Choose a size from 10 to 200 mm.");const f=$("qf").value;need(f!=="pdf"||window.jspdf,"The PDF tool did not load. Check your internet connection and reload.");
  const one=async v=>{const q=qrObj(v);return f==="pdf"?qrPdf(q,mm):f==="svg"?qrSvg(q,mm):await qrPng(q,mm,f==="jpg"?"image/jpeg":"image/png")};
@@ -302,7 +302,7 @@ $("qdl").onclick=()=>run(async()=>{need(can("list"),"Not allowed.");const sel=Ar
   saveBlob(await z.generateAsync({type:"blob"}),"qr-codes-"+sel[0].voucherNumber+"-to-"+sel[sel.length-1].voucherNumber+".zip")}
  await aud({type:"qr_exported",number:sel.length+" × "+f.toUpperCase()});say(sel.length+" QR code(s) downloaded"+(sel.length>1?" in one ZIP file with one "+f.toUpperCase()+" per voucher, named by voucher number.":"."))});
 // ---- QR link list as CSV: the ticked vouchers, or a voucher number range ----
-async function saveLinks(rows){need(rows.length,"No vouchers match.");
+async function saveLinks(rows){need(can("qrl"),"Not allowed.");need(rows.length,"No vouchers match.");
  rows=rows.slice().sort((x,y)=>(np(x.voucherNumber)-np(y.voucherNumber))||String(x.voucherNumber).localeCompare(String(y.voucherNumber)));
  const cell=x=>{x=String(x==null?"":x);if(/^[=+\-@]/.test(x))x="'"+x;return '"'+x.replace(/"/g,'""')+'"'};
  const csv="\ufeff"+[["Voucher number","QR link","Category","Start date","End date","Status","Title or description","Location","Recipient name","Contact number","Remarks"]].concat(rows.map(v=>[v.voucherNumber,qrUrl(v),catName(v.category),fd(v.startDate),fd(v.endDate),stat(v),v.title||"",locName(v.location),v.recipientName||"",v.contactNumber||"",v.remarks||""])).map(r=>r.map(cell).join(",")).join("\r\n");
@@ -406,7 +406,7 @@ $("impgo").onclick=()=>run(async()=>{need(can("imp")&&imp&&imp.items.length,"Cho
  lastRows=items.filter(it=>okN.has(it.n)).map(it=>mode==="create"?it.doc:Object.assign({},it.ex,it.data));
  await aud({type:mode==="create"?"vouchers_imported":"vouchers_bulk_updated",number:done+" saved"+(bad.length?", "+bad.length+" failed":"")});
  $("impres").innerHTML=`<div class="msg ${bad.length?"err":""}">${done} voucher(s) ${mode==="create"?"created":"updated"}${bad.length?". These could not be saved: "+esc(bad.slice(0,20).join(", "))+(bad.length>20?"…":"")+". Choose the file again to retry; vouchers already saved are skipped.":"."}</div>`;
- $("impdl").hidden=!lastRows.length;imp=null;impText="";$("impf").value="";$("impplan").innerHTML="";$("imprej").hidden=true});
+ $("impdl").hidden=!(lastRows.length&&can("qrl"));imp=null;impText="";$("impf").value="";$("impplan").innerHTML="";$("imprej").hidden=true});
 // ---- design templates (admin + supervisor): artwork, drag-and-drop fields, text formatting ----
 const FONTS=[["Arial","Arial, Helvetica, sans-serif"],["Verdana","Verdana, Geneva, sans-serif"],["Trebuchet MS","'Trebuchet MS', sans-serif"],["Tahoma","Tahoma, sans-serif"],["Georgia","Georgia, serif"],["Times New Roman","'Times New Roman', Times, serif"],["Palatino","'Palatino Linotype', Palatino, serif"],["Courier New","'Courier New', monospace"],["Impact","Impact, 'Arial Black', sans-serif"],["Brush Script","'Brush Script MT', cursive"],["Inter","Inter, sans-serif"],["Fraunces","Fraunces, serif"]];
 const FDEF=[["company","Company name"],["voucherNumber","Voucher number"],["category","Category"],["title","Title or description"],["location","Location"],["validity","Validity dates"],["startDate","Start date"],["endDate","End date"],["recipientName","Recipient name"],["contactNumber","Contact number"],["remarks","Remarks"],["qr","QR code"]];
@@ -746,14 +746,14 @@ $("rsgo").onclick=()=>run(async()=>{need(can("rst"),"Not allowed.");const sel=rs
  $("rsres").innerHTML=`<div class="msg ${err?"err":""}">${did.length?"Reset done: "+esc(did.join(", "))+". ":""}${err?"Stopped with an error: "+esc(err.message||String(err))+". Anything not listed was not reset.":""}</div>`;
  $("rsgo").disabled=false;$("rstxt").value=$("rspin").value="";$("rsconf").hidden=true;$("rsplan").innerHTML="";document.querySelectorAll("[data-rs]").forEach(c=>c.checked=false)});
 // ---- access control (admin): which modules each role can use ----
-const PROWS=MODS.concat([["pii","Recipient details in reports","Show recipient name and contact number in reports, printed reports and exports"]]);
+const PROWS=MODS.concat([["qrc","Download QR codes","The \"QR codes only\" download of QR images (PDF, SVG, PNG, JPG). Needs the Vouchers module."],["qrl","Download QR links","Every QR link download (CSV): Vouchers tab, Import / Export tab and after an import"],["pii","Recipient details in reports","Show recipient name and contact number in reports, printed reports and exports"]]);
 function drawPrm(p){$("prows").innerHTML=PROWS.map(m=>{const sens=/Sensitive/.test(m[2]);return `<tr><td>${esc(m[1])}<div style="color:${sens?"var(--brick)":"var(--soft)"};font-size:12.5px">${esc(m[2])}</div></td><td>✓</td>`+["supervisor","user"].map(r=>`<td><input type="checkbox" data-pr="${r}" data-pm="${m[0]}" ${p[r][m[0]]?"checked":""} aria-label="${esc(m[1])} for ${r}" style="width:auto"></td>`).join("")+"</tr>"}).join("")}
 function openPrm(){return run(async()=>{need(isAdmin(),"Admins only.");await loadPerms();drawPrm(perms)})}
 $("pdef").onclick=()=>drawPrm(DEFPERM);
 $("psv").onclick=()=>run(async()=>{need(isAdmin(),"Admins only.");const p={supervisor:{},user:{}};
  document.querySelectorAll("#prows input[data-pr]").forEach(c=>{p[c.dataset.pr][c.dataset.pm]=c.checked?1:0});
  await db.collection("vperms").doc("main").set({supervisor:p.supervisor,user:p.user,updatedBy:me,updatedAt:ts()});
- perms=p;await aud({type:"access_changed",number:"supervisor and end user modules"});say("Access saved. People see the change the next time they open or reload the app.")});
+ perms=p;applyNav();await aud({type:"access_changed",number:"supervisor and end user modules"});say("Access saved. People see the change the next time they open or reload the app.")});
 // ---- reports (everyone): date range, category, number range, status ----
 let repRows=[];
 const dOf=t=>t&&t.toDate?t.toDate().toLocaleDateString("en-CA"):"";
