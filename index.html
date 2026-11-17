@@ -38,7 +38,7 @@ nav{display:flex;flex-wrap:wrap}video{width:100%;max-width:420px;border-radius:8
 <label style="display:flex;gap:8px;align-items:center;font-weight:500"><input type="checkbox" id="lk" checked style="width:auto"> Keep me signed in on this device</label><p><button class="btn" id="lb" style="width:100%">Enter</button></p></div></div>
 
 <div id="app"><div class="top"><div class="brand" id="tbrand"></div>
-<nav><button data-t="list" data-m="1" class="on">Vouchers</button><button data-t="gen" data-m="1">Generate</button><button data-t="imp" data-m="1">Import / Export</button><button data-t="tpl" data-m="1">Templates</button><button data-t="cfg" data-m="1">Numbering</button><button data-t="cat" data-a="1">Categories &amp; Locations</button><button data-t="usr" data-m="1">Users</button><button data-t="prm" data-a="1">Access control</button><button data-t="log" data-m="1">Audit log</button><button data-t="brd" data-a="1">Branding</button><button data-t="bak" data-a="1">Backup</button><button data-t="rst" data-a="1">Reset data</button><button data-t="rep">Reports</button><button data-t="red">Redeem</button></nav>
+<nav><button data-t="list" data-m="1" class="on">Vouchers</button><button data-t="gen" data-m="1">Generate</button><button data-t="imp" data-m="1">Import / Export</button><button data-t="tpl" data-m="1">Templates</button><button data-t="cfg" data-m="1">Numbering</button><button data-t="cat" data-a="1">Categories &amp; Locations</button><button data-t="usr" data-m="1">Users</button><button data-t="prm" data-a="1">Access control</button><button data-t="log" data-m="1">Audit log</button><button data-t="brd" data-a="1">Branding</button><button data-t="mail" data-a="1">Email alerts</button><button data-t="bak" data-a="1">Backup</button><button data-t="rst" data-a="1">Reset data</button><button data-t="rep">Reports</button><button data-t="red">Redeem</button></nav>
 <span id="who" style="color:var(--soft);font-size:13px"></span><button class="btn g sm" id="cpin">Change PIN</button><button class="btn g sm" id="out">Sign out</button></div>
 <main><div id="msg"></div>
 
@@ -139,6 +139,22 @@ nav{display:flex;flex-wrap:wrap}video{width:100%;max-width:420px;border-radius:8
 <div id="bprev" style="margin:12px 0"></div>
 <div class="bar"><button class="btn" id="bsv">Save branding</button><button class="btn g" id="brm">Remove logo</button></div></div>
 
+<div class="card" id="mail" hidden><h2>Email alerts</h2>
+<label class="ck"><input type="checkbox" id="mon"> Send an email whenever a voucher is redeemed</label>
+<h3 style="margin-top:18px">1. Email sender (EmailJS)</h3>
+<p style="color:var(--soft);margin:4px 0">Emails are sent through EmailJS, a service that sends from your own Gmail or Outlook account. Set it up once at emailjs.com: (a) create a free account; (b) <em>Email Services</em> &gt; Add service &gt; connect your mailbox, then copy the <strong>Service ID</strong>; (c) <em>Email Templates</em> &gt; Create: set <strong>To Email</strong> to <code>{{to_email}}</code>, <strong>Subject</strong> to <code>{{subject}}</code> and put <code>{{message}}</code> in the content, then copy the <strong>Template ID</strong>; (d) <em>Account</em> &gt; API keys: copy the <strong>Public Key</strong>. The free plan allows about 200 emails a month; each recipient counts as one email.</p>
+<div class="row"><div><label>Service ID</label><input id="msid" autocomplete="off"></div><div><label>Template ID</label><input id="mtid" autocomplete="off"></div><div><label>Public key</label><input id="mpk" autocomplete="off"></div></div>
+<h3 style="margin-top:18px">2. Who gets the email</h3>
+<label>Default recipients (used for vouchers with no location, and for locations without their own list)</label><textarea id="mdef" rows="2" placeholder="name@company.com, other@company.com"></textarea>
+<p style="margin:14px 0 2px"><strong>Reroute by location</strong> <span style="color:var(--soft)">(leave a box empty to use the default recipients)</span></p><div id="mroutes"></div>
+<label class="ck"><input type="checkbox" id="malso"> Also send to the default recipients when a location has its own list</label>
+<h3 style="margin-top:18px">3. The message</h3>
+<label>Subject (you can use {number}, {location}, {category}, {company})</label><input id="msub" maxlength="150">
+<label class="ck"><input type="checkbox" id="mpers"> Include the recipient's name and contact number in the email</label>
+<label class="ck"><input type="checkbox" id="mone"> Send one email to everyone together (uses fewer of your monthly emails; use the test below to check your setup accepts it)</label>
+<div class="bar"><button class="btn" id="msave">Save</button></div>
+<h3>Send a test email</h3><div class="bar"><div><label>Test address</label><input id="mtest" type="email" placeholder="you@company.com"></div><button class="btn g" id="mtbtn">Send test</button></div><div id="mres"></div></div>
+
 <div class="card" id="bak" hidden><h2>Backup and restore</h2>
 <h3>Backup</h3><p>Downloads one file with everything: numbering settings, users, vouchers (including redeemed, voided and deleted ones) and the audit log. Keep the file somewhere safe: it contains users' PINs in scrambled form.</p>
 <button class="btn" id="bkb">Download backup</button>
@@ -162,6 +178,7 @@ nav{display:flex;flex-wrap:wrap}video{width:100%;max-width:420px;border-radius:8
 <label class="ck"><input type="checkbox" data-rs="c"> Categories: back to Paid Voucher and Complimentary Voucher</label>
 <label class="ck"><input type="checkbox" data-rs="l"> Locations: the list of locations (voucher records are separate)</label>
 <label class="ck"><input type="checkbox" data-rs="p"> Access control: back to the default permissions</label>
+<label class="ck"><input type="checkbox" data-rs="m"> Email alerts: sender settings and recipients</label>
 <label class="ck"><input type="checkbox" data-rs="b"> Branding: company name and logo</label>
 <label class="ck"><input type="checkbox" data-rs="t"> Design templates: all saved voucher designs</label>
 <div class="bar"><button class="btn g" id="rsrev">Review</button></div><div id="rsplan"></div>
@@ -197,7 +214,7 @@ nav{display:flex;flex-wrap:wrap}video{width:100%;max-width:420px;border-radius:8
 <script>
 (function(){"use strict";
 // STEP 4 of README.md: paste YOUR new project's firebaseConfig values between the quotes.
-const FIREBASE_CONFIG={ apiKey: "AIzaSyACu2vtPryh90P65Ky1mfZGuXh3oXWOJyM",
+const FIREBASE_CONFIG={apiKey: "AIzaSyACu2vtPryh90P65Ky1mfZGuXh3oXWOJyM",
 
   authDomain: "voucher-system-91b1c.firebaseapp.com",
 
@@ -233,8 +250,8 @@ const ST={get:k=>{try{return localStorage.getItem(k)||sessionStorage.getItem(k)}
  clear:()=>{try{["vu","vr","vt"].forEach(k=>localStorage.removeItem(k));sessionStorage.clear()}catch(e){}}};
 if(ST.get("vt")&&Date.now()-(+ST.get("vt"))>30*864e5)ST.clear(); // keep-signed-in lasts 30 days
 let me=ST.get("vu"),role=ST.get("vr"),allowedLocs=null,cache=[],pending=null,users=[],editId=null;
-const MODS=[["list","Vouchers","List, edit, void, delete, print, QR and design exports, WhatsApp"],["gen","Generate","Generate voucher series and manual numbers"],["imp","Import / Export","CSV import and export"],["tpl","Templates","Design template editor"],["cfg","Numbering","Voucher number settings"],["cat","Categories & Locations","Edit the category and location lists"],["usr","Users","Add and manage users (admins stay hidden; only supervisors and end users can be managed). Sensitive."],["log","Audit log","See the activity history"],["brd","Branding","Company name, logo and WhatsApp settings. Sensitive."],["bak","Backup & restore","Download and restore all data. Sensitive."],["rst","Reset data","Permanently delete data. Very sensitive."],["rep","Reports","Run, print and export reports"],["red","Redeem","Look up, scan and redeem vouchers"]];
-const DEFPERM={supervisor:{list:1,gen:1,imp:1,tpl:1,cfg:1,usr:1,log:1,rep:1,red:1,cat:0,brd:0,bak:0,rst:0,pii:1,qrc:1,qrl:1},user:{rep:1,red:1,list:0,gen:0,imp:0,tpl:0,cfg:0,usr:0,log:0,cat:0,brd:0,bak:0,rst:0,pii:0,qrc:0,qrl:0}};
+const MODS=[["list","Vouchers","List, edit, void, delete, print, QR and design exports, WhatsApp"],["gen","Generate","Generate voucher series and manual numbers"],["imp","Import / Export","CSV import and export"],["tpl","Templates","Design template editor"],["cfg","Numbering","Voucher number settings"],["cat","Categories & Locations","Edit the category and location lists"],["usr","Users","Add and manage users (admins stay hidden; only supervisors and end users can be managed). Sensitive."],["log","Audit log","See the activity history"],["brd","Branding","Company name, logo and WhatsApp settings. Sensitive."],["bak","Backup & restore","Download and restore all data. Sensitive."],["rst","Reset data","Permanently delete data. Very sensitive."],["mail","Email alerts","Set up the sender and who is emailed when a voucher is redeemed. Sensitive."],["rep","Reports","Run, print and export reports"],["red","Redeem","Look up, scan and redeem vouchers"]];
+const DEFPERM={supervisor:{list:1,gen:1,imp:1,tpl:1,cfg:1,usr:1,log:1,rep:1,red:1,cat:0,brd:0,bak:0,rst:0,mail:0,pii:1,qrc:1,qrl:1},user:{rep:1,red:1,list:0,gen:0,imp:0,tpl:0,cfg:0,usr:0,log:0,cat:0,brd:0,bak:0,rst:0,mail:0,pii:0,qrc:0,qrl:0}};
 let perms=JSON.parse(JSON.stringify(DEFPERM));
 const can=m=>role==="admin"||(m!=="prm"&&!!(perms[role]&&perms[role][m])),pii=()=>can("pii");
 const firstTab=()=>can("list")?"list":can("red")?"red":(MODS.map(m=>m[0]).find(can)||null);
@@ -246,7 +263,7 @@ const isAdmin=()=>role==="admin",isMgr=()=>role==="admin"||role==="supervisor",r
 function enter(){$("login").hidden=true;$("app").style.display="block";$("who").textContent=me+" ("+roleLabel(role)+")";
  document.querySelectorAll("nav button").forEach(b=>{b.hidden=true});
  if(!isAdmin()){const o=$("ar").querySelector('option[value="admin"]');if(o)o.remove()}
- loadPerms().catch(()=>{}).then(()=>{applyNav();return loadCats().catch(()=>{Object.keys(DEF_CATS).forEach((id,i)=>cats[id]={name:DEF_CATS[id],order:i+1});fillCats()})}).then(()=>loadLocs().catch(()=>{})).then(()=>(can("list")||can("tpl"))?loadTpls().catch(()=>{}):0).then(()=>{const q=new URLSearchParams(location.search).get("q");const ft=firstTab();if(q&&can("red")){show("red");lookupQr(q)}else if(ft)show(ft);else $("msg").innerHTML='<div class="msg err">No modules are enabled for your account. Ask an admin to give you access.</div>'})}
+ loadPerms().catch(()=>{}).then(()=>{applyNav();return loadCats().catch(()=>{Object.keys(DEF_CATS).forEach((id,i)=>cats[id]={name:DEF_CATS[id],order:i+1});fillCats()})}).then(()=>loadLocs().catch(()=>{})).then(()=>loadMail().catch(()=>{})).then(()=>(can("list")||can("tpl"))?loadTpls().catch(()=>{}):0).then(()=>{const q=new URLSearchParams(location.search).get("q");const ft=firstTab();if(q&&can("red")){show("red");lookupQr(q)}else if(ft)show(ft);else $("msg").innerHTML='<div class="msg err">No modules are enabled for your account. Ask an admin to give you access.</div>'})}
 $("lb").onclick=async()=>{const n=$("ln").value.trim(),p=$("lp").value,m=$("lmsg");m.innerHTML="";
  try{need(n&&p.length>=4,"Enter your name and a PIN of at least 4 digits.");const ref=U(n),h=await hp(n,p),s=await ref.get();let r="admin";
   if(s.exists){need(s.data().hash===h,"Wrong PIN.");r=s.data().role||"admin"}
@@ -257,9 +274,9 @@ $("out").onclick=()=>{ST.clear();location.href=location.pathname};
 $("cpin").onclick=()=>run(async()=>{const cur=prompt("Current PIN");if(cur===null)return;const s=await U(me).get();need(s.exists&&s.data().hash===await hp(me,cur),"Current PIN is wrong.");
  const nw=prompt("New PIN (4+ digits)");if(nw===null)return;need(nw.length>=4,"PIN must be at least 4 characters.");await U(me).update({hash:await hp(me,nw)});say("PIN changed.")});
 if(me&&role)U(me).get().then(s=>{if(!s.exists){ST.clear();location.reload()}else{role=s.data().role||"admin";allowedLocs=(role!=="admin"&&Array.isArray(s.data().locations))?s.data().locations:null;enter()}}).catch(()=>enter());
-const tabs=["list","ed","gen","imp","tpl","cfg","cat","usr","prm","log","brd","bak","rst","rep","red"];
+const tabs=["list","ed","gen","imp","tpl","cfg","cat","usr","prm","log","brd","mail","bak","rst","rep","red"];
 function show(t){stopCam();if(!can(t==="ed"?"list":t)){t=firstTab();if(!t){tabs.forEach(x=>$(x).hidden=true);return}}tabs.forEach(x=>$(x).hidden=x!==t);document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.t===t||(t==="ed"&&b.dataset.t==="list")));
- if(t==="list")showList();if(t==="cfg")loadCfg();if(t==="log")loadLog();if(t==="usr")loadUsers();if(t==="prm")openPrm();if(t==="tpl")openTpl();if(t==="cat")loadCatsTab();if(t==="brd")loadBrd();if(t==="red")loadDl()}
+ if(t==="list")showList();if(t==="cfg")loadCfg();if(t==="log")loadLog();if(t==="usr")loadUsers();if(t==="prm")openPrm();if(t==="mail")openMail();if(t==="tpl")openTpl();if(t==="cat")loadCatsTab();if(t==="brd")loadBrd();if(t==="red")loadDl()}
 document.querySelector("nav").onclick=e=>{if(e.target.dataset.t){say("");show(e.target.dataset.t)}};
 // ---- vouchers: list, edit, void, delete, print (admin) ----
 const CH=100,PG=50;
@@ -713,12 +730,13 @@ $("bsv").onclick=()=>run(async()=>{need(can("brd"),"Not allowed.");const name=$(
  const logo=newLogo===null?(brand.logo||""):newLogo,cc=$("bcc").value.replace(/\D/g,"").slice(0,5),wm=$("bwm").value.trim().slice(0,300);await db.collection("vbrand").doc("main").set({name:name,logo:logo,countryCode:cc,waMsg:wm,updatedBy:me,updatedAt:ts()});
  brand={name:name,logo:logo,countryCode:cc,waMsg:wm};applyBrand();await aud({type:"branding_changed",number:name||"(no name)"});newLogo=null;say("Branding saved.")});
 // ---- backup & restore (admin) ----
-const COLS=[["vcfg","Numbering"],["vbrand","Branding"],["vcats","Categories"],["vperms","Access control"],["vlocs","Locations"],["vusers","Users"],["vtemplates","Design templates"],["vouchers","Vouchers"],["vaudit","Audit log"]];
+const COLS=[["vcfg","Numbering"],["vbrand","Branding"],["vcats","Categories"],["vperms","Access control"],["vmail","Email alerts"],["vlocs","Locations"],["vusers","Users"],["vtemplates","Design templates"],["vouchers","Vouchers"],["vaudit","Audit log"]];
 const ser=x=>{if(x&&typeof x.toMillis==="function")return{__ts:x.toMillis()};if(Array.isArray(x))return x.map(ser);if(x&&typeof x==="object"){const o={};for(const k in x)o[k]=ser(x[k]);return o}return x};
 const de=x=>{if(x&&typeof x==="object"){if(Array.isArray(x))return x.map(de);if(Object.keys(x).length===1&&typeof x.__ts==="number")return firebase.firestore.Timestamp.fromMillis(x.__ts);const o={};for(const k in x)o[k]=de(x[k]);return o}return x};
 const okDoc={
  vouchers:(id,d)=>/^[A-Za-z0-9._-]{1,60}$/.test(id)&&d.voucherNumber===id&&/^[A-Za-z0-9_-]{1,40}$/.test(d.category||"")&&typeof d.startDate==="string"&&typeof d.endDate==="string"&&d.endDate>=d.startDate&&["active","redeemed","voided","deleted"].includes(d.status)&&typeof d.qrId==="string"&&d.qrId.length>=20,
  vusers:(id,d)=>typeof d.name==="string"&&typeof d.hash==="string"&&["admin","supervisor","user"].includes(d.role||"admin"),
+ vmail:(id,d)=>id==="main"&&typeof d.enabled==="boolean"&&Array.isArray(d.defaultTo),
  vperms:(id,d)=>id==="main"&&!!d.supervisor&&typeof d.supervisor==="object"&&!!d.user&&typeof d.user==="object",
  vlocs:(id,d)=>/^[A-Za-z0-9_-]{1,40}$/.test(id)&&typeof d.name==="string"&&d.name.length>=1&&d.name.length<=60,
  vcats:(id,d)=>/^[A-Za-z0-9_-]{1,40}$/.test(id)&&typeof d.name==="string"&&d.name.length>=1&&d.name.length<=60,
@@ -744,13 +762,13 @@ $("bkf").onchange=()=>run(async()=>{plan=null;$("bkgo").disabled=true;$("bkplan"
   if(c==="vbrand"&&ex.has("main")){const cur=(await db.collection("vbrand").doc("main").get()).data()||{};if(!cur.name&&!cur.logo)ex.delete("main")} // empty branding (e.g. after a reset) can be restored
   Object.keys(src).forEach(id=>{if(ex.has(id))skip++;else if(okDoc[c](id,src[id]))add.push([id,src[id]]);else bad++});
   P[c]={total:Object.keys(src).length,add:add,skip:skip,bad:bad}}
- plan=P;const todo=P.vcfg.add.length+P.vbrand.add.length+P.vcats.add.length+P.vperms.add.length+P.vlocs.add.length+P.vtemplates.add.length+P.vusers.add.length+P.vouchers.add.length+P.vaudit.add.length;
+ plan=P;const todo=P.vcfg.add.length+P.vbrand.add.length+P.vcats.add.length+P.vperms.add.length+P.vmail.add.length+P.vlocs.add.length+P.vtemplates.add.length+P.vusers.add.length+P.vouchers.add.length+P.vaudit.add.length;
  $("bkplan").innerHTML=`<p>Backup made ${esc(data.createdAt?fdt(new Date(data.createdAt)):"")} by ${esc(data.createdBy||"")}.</p><table><thead><tr><th>Data</th><th>In file</th><th>Will be added</th><th>Already present</th><th>Rejected</th></tr></thead><tbody>${COLS.map(c=>`<tr><td>${c[1]}</td><td>${P[c[0]].total}</td><td>${P[c[0]].add.length}</td><td>${P[c[0]].skip}</td><td>${P[c[0]].bad}</td></tr>`).join("")}</tbody></table>${todo?"":'<p class="msg">Nothing to restore: everything in this file is already present.</p>'}`;
  $("bkgo").disabled=!todo});
 $("bkgo").onclick=()=>run(async()=>{need(can("bak")&&plan,"Choose a backup file first.");
  if(!confirm("Restore the missing records from this backup? Existing records are not changed."))return;
  $("bkgo").disabled=true;let added=0,failed=0;const P=plan,prog=$("bkprog");
- for(const c of ["vbrand","vcats","vperms","vlocs","vtemplates","vusers","vouchers","vaudit"]){const items=P[c].add;
+ for(const c of ["vbrand","vcats","vperms","vmail","vlocs","vtemplates","vusers","vouchers","vaudit"]){const items=P[c].add;
   for(let i=0;i<items.length;i+=400){const part=items.slice(i,i+400),b=db.batch();
    part.forEach(([id,d])=>{const x=de(d);if(c!=="vusers")x.restoredAt=ts();b.set(db.collection(c).doc(id),x)});
    try{await b.commit();added+=part.length}catch(e){failed+=part.length}
@@ -773,6 +791,7 @@ $("rsrev").onclick=()=>run(async()=>{need(can("rst"),"Not allowed.");const sel=r
  if(sel.includes("c")){if(!sel.includes("v"))need((await db.collection("vouchers").limit(1).get()).empty,"Vouchers still use the current categories. Tick Voucher records as well, or leave Categories alone.");L.push("<li>Categories go back to Paid Voucher and Complimentary Voucher.</li>")}
  if(sel.includes("l")){if(!sel.includes("v"))need((await db.collection("vouchers").where("location","!=","").limit(1).get()).empty,"Vouchers still use locations. Tick Voucher records as well, or leave Locations alone.");L.push(`<li><strong>${(await idsOf("vlocs")).length}</strong> location(s) will be deleted.</li>`)}
  if(sel.includes("p"))L.push("<li>Supervisor and end user access goes back to the default permissions.</li>");
+ if(sel.includes("m"))L.push("<li>The email alert settings (sender and recipients) are deleted.</li>");
  if(sel.includes("b"))L.push("<li>The company name and logo are cleared.</li>");
  if(sel.includes("t"))L.push(`<li><strong>${(await idsOf("vtemplates")).length}</strong> design template(s) will be deleted.</li>`);
  $("rsplan").innerHTML="<p>You are about to reset:</p><ul>"+L.join("")+"</ul>";$("rsconf").hidden=false});
@@ -787,6 +806,7 @@ $("rsgo").onclick=()=>run(async()=>{need(can("rst"),"Not allowed.");const sel=rs
   if(sel.includes("n")){const c=await CFG().get();need(c.exists,"The number counter isn't set up.");await CFG().update({nextNumber:c.data().startNumber});did.push("number counter")}
   if(sel.includes("u")){const ids=(await idsOf("vusers")).filter(i=>i!==U(me).id);await delIds("vusers",ids,n=>prog("Deleting users… "+n+" of "+ids.length));did.push("users ("+ids.length+")")}
   if(sel.includes("c")){const ids=(await idsOf("vcats")).filter(i=>!DEF_CATS[i]);await delIds("vcats",ids,()=>{});const b=db.batch();Object.keys(DEF_CATS).forEach((id,i)=>b.set(db.collection("vcats").doc(id),{name:DEF_CATS[id],order:i+1}));await b.commit();did.push("categories")}
+  if(sel.includes("m")){try{await db.collection("vmail").doc("main").delete()}catch(e){}MAIL=null;did.push("email alerts")}
   if(sel.includes("p")){try{await db.collection("vperms").doc("main").delete()}catch(e){}perms=JSON.parse(JSON.stringify(DEFPERM));did.push("access control")}
   if(sel.includes("l")){const ids=await idsOf("vlocs");await delIds("vlocs",ids,()=>{});locs={};fillLocs();did.push("locations ("+ids.length+")")}
   if(sel.includes("t")){const ids=await idsOf("vtemplates");await delIds("vtemplates",ids,()=>{});tpls={};cur=null;fillTpls();did.push("design templates ("+ids.length+")")}
@@ -822,6 +842,41 @@ $("lccancel").onclick=()=>{$("lcm").hidden=true};
 document.addEventListener("change",e=>{const c=e.target;if(c&&c.dataset&&c.dataset.lc!==undefined){const box=c.closest("[id$=list]");const r=box&&$(box.id.slice(0,-4)+"some");if(r&&!r.disabled)r.checked=true}}); // ticking a location means "only these"
 $("lcsave").onclick=()=>run(async()=>{need(lcUser&&can("usr")&&lcUser.role!=="admin","Not allowed.");const arr=readLocPick("lc");need(!restricted()||arr.every(id=>allowedLocs.includes(id)),"Not allowed.");
  await U(lcUser.name).update({locations:arr});await aud({type:"user_locations_changed",number:lcUser.name+": "+(arr?arr.map(locName).join(", "):"all locations")});$("lcm").hidden=true;say("Locations saved for "+lcUser.name+". They apply the next time that person opens the app.");await loadUsers()});
+// ---- email alerts when a voucher is redeemed ----
+let MAIL=null;
+const parseEmails=t=>Array.from(new Set(String(t||"").split(/[\s,;]+/).map(x=>x.trim().toLowerCase()).filter(Boolean)));
+const okMail=x=>/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(x);
+async function loadMail(){const s=await db.collection("vmail").doc("main").get();MAIL=s.exists?s.data():null}
+function mailTo(v,m){m=m||MAIL||{};const route=(m.routes&&v.location&&m.routes[v.location])||[],def=m.defaultTo||[];return Array.from(new Set(route.length?(m.alsoDefault?route.concat(def):route):def))}
+async function emailSend(cfg,to,subject,message){const r=await fetch("https://api.emailjs.com/api/v1.0/email/send",{method:"POST",headers:{"Content-Type":"application/json"},
+ body:JSON.stringify({service_id:cfg.serviceId,template_id:cfg.templateId,user_id:cfg.publicKey,template_params:{to_email:to,subject:subject,message:message}})});
+ const t=await r.text();if(!r.ok)throw new Error((t||"Email service error "+r.status).slice(0,160))}
+const mailSubject=(m,v)=>(m.subject||"Voucher {number} redeemed").replace(/\{number\}/g,v.voucherNumber).replace(/\{location\}/g,locName(v.location)||"no location").replace(/\{category\}/g,catName(v.category)).replace(/\{company\}/g,brand.name||"");
+function mailBody(m,v,by,when){let t="Voucher "+v.voucherNumber+" has been redeemed.\n\nCategory: "+catName(v.category)+"\n"+(v.location?"Location: "+locName(v.location)+"\n":"")+(v.title?"Title: "+v.title+"\n":"")+"Valid: "+fd(v.startDate)+" to "+fd(v.endDate)+"\nRedeemed by: "+by+"\nRedeemed on: "+fdt(when)+"\n";
+ if(m.showPersonal&&(v.recipientName||v.contactNumber))t+="\nRecipient: "+(v.recipientName||"-")+"\nContact: "+(v.contactNumber||"-")+"\n";
+ return t+(brand.name?"\n"+brand.name:"")}
+async function notifyRedeem(v){const m=MAIL;if(!m||!m.enabled)return null;
+ try{const to=mailTo(v,m);if(!to.length){await aud({type:"email_skipped",number:v.voucherNumber+": no recipient set"});return "No notification email was sent: no recipient is set for this voucher's location."}
+  const subj=mailSubject(m,v),body=mailBody(m,v,me,new Date());
+  if(m.oneEmail)await emailSend(m,to.join(", "),subj,body);else for(const a of to)await emailSend(m,a,subj,body);
+  await aud({type:"email_sent",number:v.voucherNumber+" → "+to.length+" recipient(s)"});return "Notification emailed to "+to.length+" recipient"+(to.length===1?"":"s")+"."}
+ catch(e){try{await aud({type:"email_failed",number:v.voucherNumber+": "+String(e.message).slice(0,80)})}catch(x){}return "The voucher was redeemed, but the notification email could not be sent: "+e.message}}
+function openMail(){return run(async()=>{need(can("mail"),"Not allowed.");await loadMail();await loadLocs();const m=MAIL||{};
+ $("mon").checked=!!m.enabled;$("msid").value=m.serviceId||"";$("mtid").value=m.templateId||"";$("mpk").value=m.publicKey||"";$("mdef").value=(m.defaultTo||[]).join(", ");
+ $("malso").checked=!!m.alsoDefault;$("mpers").checked=!!m.showPersonal;$("mone").checked=!!m.oneEmail;$("msub").value=m.subject||"Voucher {number} redeemed";
+ const ids=Object.keys(locs).sort((a,b)=>(locs[a].order||0)-(locs[b].order||0));
+ $("mroutes").innerHTML=ids.map(id=>`<div style="margin:6px 0"><label>${esc(locs[id].name)}</label><input data-mr="${esc(id)}" value="${esc(((m.routes||{})[id]||[]).join(", "))}" placeholder="optional: emails for this location"></div>`).join("")||'<p style="color:var(--soft)">No locations yet. Add them in Categories &amp; Locations, then set a recipient list for each here.</p>'})}
+function readMail(){const bad=[],list=t=>{const a=parseEmails(t);a.filter(x=>!okMail(x)).forEach(x=>bad.push(x));return a},defaultTo=list($("mdef").value),routes={};
+ document.querySelectorAll("#mroutes input[data-mr]").forEach(i=>{const a=list(i.value);if(a.length)routes[i.dataset.mr]=a});
+ need(!bad.length,"These email addresses are not valid: "+bad.slice(0,5).join(", "));
+ return {enabled:$("mon").checked,serviceId:$("msid").value.trim(),templateId:$("mtid").value.trim(),publicKey:$("mpk").value.trim(),defaultTo:defaultTo,routes:routes,alsoDefault:$("malso").checked,showPersonal:$("mpers").checked,oneEmail:$("mone").checked,subject:$("msub").value.trim()||"Voucher {number} redeemed"}}
+$("msave").onclick=()=>run(async()=>{need(can("mail"),"Not allowed.");const m=readMail();
+ if(m.enabled){need(m.serviceId&&m.templateId&&m.publicKey,"Fill in the Service ID, Template ID and Public key, or untick the switch at the top.");need(m.defaultTo.length||Object.keys(m.routes).length,"Add at least one recipient.")}
+ await db.collection("vmail").doc("main").set(Object.assign({},m,{updatedBy:me,updatedAt:ts()}));MAIL=m;await aud({type:"email_settings_changed",number:m.enabled?"on":"off"});say("Email alert settings saved.")});
+$("mtbtn").onclick=()=>run(async()=>{need(can("mail"),"Not allowed.");const m=readMail(),to=$("mtest").value.trim().toLowerCase();need(okMail(to),"Enter a valid test email address.");need(m.serviceId&&m.templateId&&m.publicKey,"Fill in the Service ID, Template ID and Public key first.");
+ $("mres").textContent="Sending…";const v={voucherNumber:"TEST-0001",category:Object.keys(cats)[0]||"PAID",location:Object.keys(m.routes)[0]||"",title:"Sample voucher",startDate:"2026-11-01",endDate:"2026-12-31",recipientName:"Sample Person",contactNumber:"+974 0000 0000"};
+ try{await emailSend(m,to,"[TEST] "+mailSubject(m,v),"This is a test of your voucher redemption alerts.\n\n"+mailBody(m,v,me,new Date()));$("mres").innerHTML='<div class="msg">Test email sent to '+esc(to)+'. If it does not arrive, check the spam folder and your EmailJS settings.</div>'}
+ catch(e){$("mres").innerHTML='<div class="msg err">The test email failed: '+esc(e.message)+'</div>'}});
 // ---- reports (everyone): date range, category, number range, status ----
 let repRows=[];
 const dOf=t=>t&&t.toDate?t.toDate().toLocaleDateString("en-CA"):"";
@@ -858,7 +913,7 @@ function showV(v){const st=v.status==="deleted"?"not found":stat(v);
  if(v.status==="deleted"){$("sres").innerHTML=`<div class="msg err">No voucher found.</div>`;return}
  $("sres").innerHTML=`<h3>${esc(v.voucherNumber)}</h3><p>${catName(v.category)}${v.title?" – "+esc(v.title):""}<br>Valid ${esc(fd(v.startDate))} to ${esc(fd(v.endDate))}<br>Status: <span class="tag ${st.split(" ")[0]}">${esc(st)}</span></p>${(v.location||v.recipientName||v.contactNumber||v.remarks)?`<p style="white-space:pre-wrap">${v.location?"Location: "+esc(locName(v.location))+"\n":""}${v.recipientName?"Recipient: "+esc(v.recipientName)+"\n":""}${v.contactNumber?"Contact: "+esc(v.contactNumber)+"\n":""}${v.remarks?"Remarks: "+esc(v.remarks):""}</p>`:""}${st==="active"?'<button class="btn" id="rd">Redeem now</button>':""}`;
  const b=$("rd");if(b)b.onclick=()=>{if(confirm("Redeem voucher "+v.voucherNumber+"? This cannot be undone."))run(async()=>{await db.runTransaction(async tx=>{const s=await tx.get(V(v.voucherNumber));need(s.exists&&locOK(s.data())&&stat(s.data())==="active","This voucher can no longer be redeemed.");
-  tx.update(V(v.voucherNumber),{status:"redeemed",redeemedAt:ts(),redeemedBy:me,modifiedAt:ts(),modifiedBy:me});audit(tx,{type:"voucher_redeemed",number:v.voucherNumber})});lookupNum(v.voucherNumber);loadDl()})}}
+  tx.update(V(v.voucherNumber),{status:"redeemed",redeemedAt:ts(),redeemedBy:me,modifiedAt:ts(),modifiedBy:me});audit(tx,{type:"voucher_redeemed",number:v.voucherNumber})});const note=notifyRedeem(v);await lookupNum(v.voucherNumber);loadDl();const nm=await note;if(nm)say(nm,nm.includes("could not"))})}}
 function lookupNum(n){return run(async()=>{need(n,"Enter a voucher number.");const s=await V(n.trim()).get();need(s.exists&&locOK(s.data()),"No voucher found with that number.");showV(s.data())})}
 function lookupQr(code){return run(async()=>{const q=await db.collection("vouchers").where("qrId","==",code).limit(1).get();
  if(!q.empty){need(locOK(q.docs[0].data()),"No voucher matches this QR code.");$("rn").value=q.docs[0].id;return showV(q.docs[0].data())}
